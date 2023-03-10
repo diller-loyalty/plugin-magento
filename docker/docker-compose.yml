@@ -1,0 +1,49 @@
+version: '3.5'
+name: 'diller-loyalty--magento-plugin'
+
+services:
+  mysql:
+    image: mysql:8.0.25
+    restart: unless-stopped
+    ports:
+      - '3306:3306'
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      MYSQL_DATABASE: magento
+      MYSQL_USER: diller
+      MYSQL_PASSWORD: diller123
+      MYSQL_ROOT_PASSWORD: diller123
+    volumes:
+      - diller-loyalty--magento-db:/var/lib/mysql
+    networks:
+      - diller-loyalty--magento
+
+  php:
+    image: php-custom:xdebug
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    volumes:
+      - diller-loyalty--magento-plugin:/var/www/html
+      - ../src/.htaccess:/var/www/html/.htaccess
+      - ../src/.user.ini:/var/www/html/.user.ini
+      - ../src/app/code/Diller/LoyaltyProgram:/var/www/html/app/code/Diller/LoyaltyProgram
+      - ../src/app/code/Diller/LoyaltyProgram/vendor:/var/www/html/app/code/Diller/LoyaltyProgram/vendor # This will ignore node_modules. Note that order is important
+    depends_on:
+      - mysql
+    networks:
+      - diller-loyalty--magento
+
+volumes:
+  diller-loyalty--magento-db:
+
+  diller-loyalty--magento-plugin:
+    external: true
+    name: "diller-loyalty--magento-plugin"
+
+networks:
+  diller-loyalty--magento:
