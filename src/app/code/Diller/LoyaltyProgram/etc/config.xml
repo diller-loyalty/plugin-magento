@@ -4,7 +4,6 @@
         <dillerloyalty>
             <settings>
                 <loyalty_program_enabled>No</loyalty_program_enabled>
-                <loyalty_name>Loyalty program</loyalty_name>
                 <test_connection>Test</test_connection>
             </settings>
         </dillerloyalty>
