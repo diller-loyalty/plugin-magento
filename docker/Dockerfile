@@ -2,7 +2,7 @@ FROM php:8.1-apache as builder
 
 LABEL maintainer = "Diller Dev Team <devtechsupport@diller.no>"
 
-RUN apt-get update && apt-get install --no-install-recommends --assume-yes --quiet unzip wget iputils-ping net-tools
+RUN apt-get update && apt-get install --no-install-recommends --assume-yes --quiet nano unzip wget iputils-ping net-tools
 
 RUN pecl install xdebug
 
@@ -64,7 +64,6 @@ RUN { \
     # To view trace logs use https://github.com/kuun/xdebug-trace-viewer
     echo 'xdebug.trace_format=1'; \
     echo 'xdebug.auto_trace=false'; \
-    echo 'xdebug.trace_enable_trigger=true'; \
     echo 'xdebug.collect_assignments=true'; \
     echo 'xdebug.collect_return=true'; \
     echo 'xdebug.trace_output_name=trace.%p.%t'; \
@@ -75,11 +74,12 @@ RUN { \
     # Enable on demand, by sending a GET/POST parameter or COOKIE variable of the name XDEBUG_SESSION
     # Or via chrome/ff extension: Xdebug helper
     echo 'xdebug.start_with_request=trigger'; \
-
 } > /usr/local/etc/php/conf.d/docker-php-xdebug.ini
-
 
 # Override max_execution_time = 30 from /usr/local/etc/php/php.ini-production to a higher value.
 # This is desired when using trace/debug/profiling and script execution takes longer to complete
 RUN echo 'max_execution_time = 0' >> /usr/local/etc/php/conf.d/docker-php-maxexectime.ini;
 RUN echo 'memory_limit  = -1' >> /usr/local/etc/php/conf.d/docker-php-memorylimit.ini;
+
+RUN mkdir /tmp/xdebug \
+    && chmod 777 /tmp/xdebug

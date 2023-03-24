@@ -1,0 +1,269 @@
+<?php
+    use Diller\LoyaltyProgram\Block\LoyaltyDetails\Member;
+    /** @var Member $block */
+    ?>
+<?php
+    if($block->getCustomer()){
+        $customer_email = $block->getCustomer()->getEmail();
+        $member = $block->getMember($customer_email)[0];
+    }
+    $loyaltyDetails = $block->getLoyaltyDetails();
+    $storeSegments = $block->getStoreSegments();
+    $storeDepartments = $block->getStoreDepartments();
+?>
+<fieldset class="fieldset create account">
+    <legend class="legend"><span>Loyalty Program</span></legend><br>
+    <div class="field phonenumber required">
+        <label class="label" for="phonenumber">
+            <span><?= $block->escapeHtml(__('Phone Number')) ?></span>
+        </label>
+        <div class="control">
+            <input type="text" name="phonenumber" id="phonenumber" value="<?= $member['phone']['countryCode'] ?> <?= $member['phone']['number'] ?>" title="<?= $block->escapeHtmlAttr(__('Phone Number')) ?>" class="input-text" data-validate="{required:true}">
+        </div>
+    </div>
+    <?php if (!empty($member)){ ?>
+        <!-- Birthdate -->
+        <div class="loyalty field date">
+            <label class="label" for="birthdate">
+                <span><?= $block->escapeHtml(__('Birthdate')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="birthdate" id="birthdate" value="<?= isset($member['birthDate']) ? date_format($member['birthDate'],"d-m-Y") : '' ?>" title="<?= $block->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
+            </div>
+        </div>
+
+        <!-- Gender -->
+        <?php
+            $genders = array(
+                array("id" => 1, "name" => "Male"),
+                array("id" => 2, "name" => "Female"),
+                array("id" => 4, "name" => "Non-binary"),
+                array("id" => 3, "name" => "Don't want to share"),
+            )
+        ?>
+        <div class="loyalty options field">
+            <label class="label" for="gender">
+                <span><?= $block->escapeHtml(__('Gender')) ?></span>
+            </label>
+            <div class="control">
+                <?php foreach($genders as $gender ){?>
+                    <div class="option">
+                        <input type="radio" name="gender" id="<?= $gender['id'] ?>" value="<?= $gender['id'] ?>" title="<?= $gender['name'] ?>" class="input-radio" <?= ($member["gender"] === $gender['name']) ? 'checked' : '' ?>>
+                        <label for="<?= $gender['id'] ?>"><?= $gender['name'] ?></label>
+                    </div>
+                <?php } ?>
+            </div>
+        </div>
+
+        <!-- Address -->
+        <div class="loyalty field">
+            <label class="label" for="address">
+                <span><?= $block->escapeHtml(__('Address')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="address" id="address" value="<?= $member['address']['street'] ?>" title="<?= $block->escapeHtmlAttr(__('Address')) ?>" class="input-text">
+            </div>
+        </div>
+
+        <!-- ZIPCODE -->
+        <div class="loyalty field">
+            <label class="label" for="zipcode">
+                <span><?= $block->escapeHtml(__('Zip Code')) ?></span>
+            </label>
+            <div class="control">
+                <input type="number" name="zipcode" id="zipcode" value="<?= $member['address']['zipCode'] ?>" title="<?= $block->escapeHtmlAttr(__('Zip Code')) ?>" class="input-number">
+            </div>
+        </div>
+
+        <!-- CITY -->
+        <div class="loyalty field">
+            <label class="label" for="city">
+                <span><?= $block->escapeHtml(__('City')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="city" id="city" value="<?= $member['address']['city'] ?>" title="<?= $block->escapeHtmlAttr(__('City')) ?>" class="input-text">
+            </div>
+        </div>
+
+        <!-- COUNTRY -->
+        <div class="loyalty field">
+            <label class="label" for="country">
+                <span><?= $block->escapeHtml(__('Country')) ?></span>
+            </label>
+            <div class="control">
+                <select name="country" id="country">
+                    <option value="NO">Norway</option>
+                    <option value="PT" <?= ($member['address']['countryCode'] == 'PT') ? 'selected' : '' ?>>Portugal</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- SEGMENTS -->
+        <?php foreach($storeSegments as $segment ){
+            if ($segment['isVisibleToFollower']) {
+
+                $memberResponse = [];
+                foreach($member['segments'] as $segmentResponse){
+                    if($segmentResponse['id'] == $segment['id']){
+                        $memberResponse = $segmentResponse;
+                        continue;
+                    }
+                }
+                switch($segment['type']){
+                    case ('DateTime'):
+                        $segment_type = "date";
+                        break;
+                    case ('Dropdown'):
+                        $segment_type = "select";
+                        break;
+                    case ('Radio'):
+                        $segment_type = "radio";
+                        break;
+                    case ('Checkbox'):
+                        $segment_type = "checkbox";
+                        break;
+                    default:
+                        $segment_type = "text";
+                } ?>
+                <div class="loyalty <?= ($segment_type === 'radio' || $segment_type === 'checkbox') ? 'options' : ''?> field required">
+                    <label class="label" for="segment_<?= $segment['id'] ?>">
+                        <span><?= $segment['text'] ?></span>
+                    </label>
+                    <div class="control">
+                        <?php if($segment_type === "select"){ ?>
+                            <select name="<?= $segment['id'] ?>" id="<?= $segment['id'] ?>">
+                                <?php foreach($segment['options'] as $option ){ ?>
+                                    <option value="<?= $option['id'] ?>" <?= ($memberResponse['value'] == $option['id']) ? 'selected' : '' ?>><?= $option['text'] ?></option>
+                                <?php } ?>
+                            </select>
+                        <?php }elseif($segment_type === "checkbox" || $segment_type === "radio"){
+                            foreach($segment['options'] as $option ){ ?>
+                                <div class="option">
+                                    <input
+                                        type="<?= $segment_type ?>"
+                                        name="<?= $segment['id'] ?>"
+                                        id="<?= $option['id'] ?>"
+                                        value="<?= $option['id'] ?>"
+                                        title="<?= $option['text'] ?>"
+                                        class="input-<?= $segment_type ?>"
+                                        data-validate="<?= $segment['isRequired'] ? '{required:true}' : '' ?>"
+                                        <?php if((
+                                                $segment_type === 'radio' &&
+                                                $memberResponse['value'] == $option['id']
+                                            ) || (
+                                                $segment_type === 'checkbox' &&
+                                                in_array($option['id'], $memberResponse['selectedOptions'])
+                                            )){
+                                                echo 'checked';
+                                        } ?>
+                                    >
+                                    <label for="<?= $option['id'] ?>"><?= $option['text'] ?></label>
+                                </div>
+                            <?php }
+                        }else{ ?>
+                            <div class="control">
+                                <input type="<?= $segment_type ?>" name="<?= $segment['id'] ?>" id="<?= $segment['id'] ?>" value="<?= $memberResponse['value'] ?? '' ?>" title="<?= $segment['id'] ?>" class="input-<?= $segment_type ?>">
+                            </div>
+                        <?php } ?>
+                    </div>
+                </div>
+            <?php } ?>
+        <?php } ?>
+
+        <!-- DEPARTMENTS -->
+        <?php if (!empty($storeDepartments)) { ?>
+            <div class="loyalty options field required">
+                <label class="label">
+                    <span>Department</span>
+                </label>
+                <div class="control">
+                    <?php foreach($storeDepartments as $option ){?>
+                        <div class="option">
+                            <input type="checkbox" name="<?= $option['name'] ?>" id="<?= $option['id'] ?>" value="<?= $option['id'] ?>" title="<?= $option['name'] ?>" class="input-checkbox" data-validate="{required:true}" <?= in_array($option['id'], $member['departmentIds']) ? 'checked' : '' ?>>
+                            <label for="<?= $option['id'] ?>"><?= $option['name'] ?></label>
+                        </div>
+                    <?php } ?>
+                </div>
+            </div>
+        <?php } ?>
+    <?php } ?>
+
+    <div class="loyalty <?=!empty($member) ? 'options' : ''?> field">
+        <label class="label">
+            <span>Marketing Consent</span>
+        </label>
+        <?php if (!empty($member)){ ?>
+            <div class="control">
+                <div class="option">
+                    <input type="checkbox"
+                           name="loyalty_consent_sms"
+                           id="loyalty_consent_sms"
+                           class="checkbox"
+                           <?= $member['consent']['receiveSms'] ? 'checked' : '' ?>
+                    >
+                    <label for="loyalty_consent_sms" class="label">
+                        <span>Consent SMS</span>
+                    </label>
+                </div>
+                <div class="option">
+                    <input type="checkbox"
+                           name="loyalty_consent_email"
+                           id="loyalty_consent_email"
+                           class="checkbox"
+                            <?= $member['consent']['receiveEmail'] ? 'checked' : '' ?>
+                    >
+                    <label for="loyalty_consent_email" class="label">
+                        <span>Consent Email</span>
+                    </label>
+                </div>
+                <div class="option">
+                    <input type="checkbox"
+                           name="loyalty_consent_order_history"
+                           id="loyalty_consent_order_history"
+                           class="checkbox"
+                            <?= $member['consent']['saveOrderHistory'] ? 'checked' : '' ?>
+                    >
+                    <label for="loyalty_consent_order_history" class="label">
+                        <span>Consent Order History</span>
+                    </label>
+                </div>
+            </div>
+        <?php }else{ ?>
+            <div class="control">
+                <input type="checkbox"
+                       name="loyalty_consent"
+                       value="1"
+                       id="loyalty_consent"
+                       class="checkbox">
+                <label for="loyalty_consent" class="label">
+                    <span>I want to become a member of the loyalty program and have read the terms and conditions for membership.</span>
+                </label>
+            </div>
+        <?php } ?>
+    </div>
+</fieldset>
+
+<style>
+    .field > .label{
+        font-weight:bold;
+    }
+    .loyalty.field.options {
+        float: left;
+        width: 100%;
+        display: block;
+    }
+    .loyalty.field.options > label {
+        float: left;
+        width: 100%;
+    }
+    .loyalty.field.options .control {
+        margin-left: -5px;
+        margin-right: -5px;
+        float: left;
+        width: 100%;
+    }
+    .loyalty.field.options .control > div {
+        margin: 0 5px 5px;
+        float: left;
+    }
+</style>
