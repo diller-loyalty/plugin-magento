@@ -1,0 +1,18 @@
+<?php
+/**
+ * @var \Diller\LoyaltyProgram\Block\Adminhtml\TestConnection $block
+ */
+?>
+
+    <?php echo $block->getButtonHtml() ?>
+    <br><p class="test-result"></p>
+
+    <script>
+        document.querySelector("#testConnectionBtn").onclick = function(){
+            if(<?php echo $block->testConnection() ?>){
+                document.querySelector(".test-result").innerHTML = "Test successful!";
+            }else{
+                document.querySelector(".test-result").innerHTML = "Connection failure!";
+            }
+        };
+    </script>

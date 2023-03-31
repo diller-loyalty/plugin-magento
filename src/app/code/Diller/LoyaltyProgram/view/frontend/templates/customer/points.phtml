@@ -1,13 +1,17 @@
 <?php
-use Diller\LoyaltyProgram\Block\Frontend\Member;
-/** @var Member $block */
+    use Diller\LoyaltyProgram\Block\Frontend\Member;
+    /** @var Member $block */
+
+    $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 ?>
 <?php
     if($block->getCustomer()){
         $customer_email = $block->getCustomer()->getEmail();
-        $member = $block->getMember($customer_email)[0];
+        $member = $block->getMemberByEmail($customer_email);
     }
-    $loyaltyDetails = $block->getLoyaltyDetails();
+
+    $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
+    $membershipLevels = $loyaltyHelper->getStoreMembershipLevels();
 ?>
 <?php if(!empty($member) && $loyaltyDetails['pointsSystem']['enabled']) { ?>
     <div class="diller-container points">
@@ -28,26 +32,37 @@ use Diller\LoyaltyProgram\Block\Frontend\Member;
             <br>
             <span>
                 Points till next level (<?= $member['membershipDetail']['nextLevelTitle'] ?>):
-                <span><b><?= $member['membershipDetail']['nextLevelPoints'] ?> points</b></span>
+                <span><b><?= $member['membershipDetail']['remainingPoints'] ?> points</b></span>
             </span>
         </div>
 
-        <div class="diller-membership-progress" style="margin: 25px 0;">
+        <div class="diller-membership-progress">
             <div class="diller-membership-progress-points">
-                <?php //foreach($loyaltyDetails['membership_levels'] as $level){ ?>
-                    <div><?= 'points' //$level['points'] ?></div>
-                <?php //} ?>
+                <?php
+                    $max_points = 0;
+                    foreach($membershipLevels as $level){
+                        if ($max_points < $level['points']) $max_points = $level['points'];
+                        echo "<div data-points='".$level['points']."'><b>" . $level['name'] . '</b><br>' . $level['points'] . '</div>';
+                    }
+                ?>
             </div>
             <div class="diller-membership-progress-bar">
-                <div class="diller-membership-progress-bar-indicator" style="width:25%;"></div>
-            </div>
-            <div class="diller-membership-progress-points">
-                <?php //foreach($loyaltyDetails['membership_levels'] as $level){ ?>
-                    <div><?= 'title' //= $level['title'] ?></div>
-                <?php //} ?>
+                <div class="diller-membership-progress-bar-indicator" style="width:calc(<?= (int)100*$member['membershipDetail']['points']/$max_points ?>% - 14px);"><span><?=$member['membershipDetail']['points']?></span></div>
             </div>
         </div>
     </div>
+
+    <script>
+        let membership_levels_elements = document.querySelectorAll('.diller-membership-progress-points div');
+        let membership_levels_points = [];
+        membership_levels_elements.forEach((level) => {
+            membership_levels_points.push(level.getAttribute("data-points"));
+        });
+        membership_levels_points.sort();
+        membership_levels_elements.forEach((level) => {
+            level.style.left = 100*level.getAttribute("data-points")/membership_levels_points[membership_levels_points.length - 1] + '%';
+        });
+    </script>
 
     <style>
         .diller-container{
@@ -60,31 +75,49 @@ use Diller\LoyaltyProgram\Block\Frontend\Member;
         /* Points progressbar */
         .diller-membership-progress {
             display: flex;
+            margin: 25px 0;
             flex-direction: column;
+            flex-flow: column-reverse;
         }
 
-        .diller-membership-progress-points > div, .diller-membership-progress-labels > div {
-            position: absolute;
-        }
-
-        .diller-membership-progress-points > div:last-child, .diller-membership-progress-points > div:last-child, .diller-membership-progress-labels > div:last-child, .diller-membership-progress-labels > div:last-child {
-            transform: translate(-100%);
-        }
-
-        .diller-membership-progress-bar {
-            color: #000;
-            background-color: #fff;
-            border-radius: 50px;
-            padding: 5px;
+        .diller-membership-progress-points{
+            display: inline;
+            float: left;
             width: 100%;
         }
 
+        .diller-membership-progress-points > div{
+            position: absolute;
+            text-align: center;
+            width: auto;
+        }
+
+        .diller-membership-progress-points > div:first-child {
+            left: 0;
+        }
+        .diller-membership-progress-points > div:last-child {
+            right: 0;
+            left: unset !important;
+        }
+
+        .diller-membership-progress-bar {
+            color: #fff;
+            background-color: #ededed;
+            border-radius: 10px;
+            padding: 0;
+            width: 100%;
+            overflow: hidden;
+            margin: 0 0 10px;
+        }
+
         .diller-membership-progress-bar-indicator {
+            background-color: var(--diller-membership_progress_bar-background-color);
+            justify-content: end;
+            align-items: center;
+            padding: 7px 15px;
+            display: flex;
             height: 24px;
             color: #000;
-            border-radius: 50px;
-            padding: 20px;
-            background-color: var(--diller-membership_progress_bar-background-color);
             width: 0;
         }
 

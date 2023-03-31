@@ -83,3 +83,6 @@ RUN echo 'memory_limit  = -1' >> /usr/local/etc/php/conf.d/docker-php-memorylimi
 
 RUN mkdir /tmp/xdebug \
     && chmod 777 /tmp/xdebug
+
+
+RUN composer config --global --auth gitlab-token.gitlab.com glpat-QHdGguHCsCr3F-MeqNc_

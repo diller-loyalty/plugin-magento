@@ -30,6 +30,7 @@ services:
     volumes:
       - diller-loyalty--magento-plugin:/var/www/html
       - ../src/.htaccess:/var/www/html/.htaccess
+      - ../src/composer.json:/var/www/html/composer.json
       - ../src/.user.ini:/var/www/html/.user.ini
       - ../src/app/code/Diller/LoyaltyProgram:/var/www/html/app/code/Diller/LoyaltyProgram
       - ../src/app/code/Diller/LoyaltyProgram/vendor:/var/www/html/app/code/Diller/LoyaltyProgram/vendor # This will ignore node_modules. Note that order is important
