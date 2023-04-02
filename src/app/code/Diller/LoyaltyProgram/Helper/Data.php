@@ -71,4 +71,8 @@ class Data extends AbstractHelper{
     public function getMemberCoupons($member_id){
         return $this->dillerAPI->Coupons->getMemberCoupons($this->store_uid, $member_id);
     }
+
+    public function updateMember($member_id, $data){
+        return $this->dillerAPI->Members->updateMember($this->store_uid, $member_id, $data);
+    }
 }

@@ -31,19 +31,13 @@ class UpgradeData implements UpgradeDataInterface{
                 'label'        => 'Diller Member ID',
                 'input'        => 'text',
                 'required'     => false,
-                'visible'      => true,
+                'visible'      => false,
                 'user_defined' => false,
                 'position'     => 999,
                 'system'       => 0,
             ]
         );
         $dillerMemberId = $this->eavConfig->getAttribute(Customer::ENTITY, 'diller_member_id');
-
-        // more used_in_forms ['adminhtml_checkout','adminhtml_customer','adminhtml_customer_address','customer_account_edit','customer_address_edit','customer_register_address']
-        $dillerMemberId->setData(
-            'used_in_forms',
-            ['adminhtml_customer']
-        );
         $dillerMemberId->save();
     }
 }
