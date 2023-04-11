@@ -42,6 +42,16 @@ RUN php -r "unlink('composer-setup.php');"
 
 RUN mv composer.phar /usr/local/bin/composer
 
+# expect build-time variables. They can be passed via --build-arg or args: under build:
+ARG A_XDEBUG_PORT=9003
+ARG A_XDEBUG_IDEKEY=DOCKER
+ARG A_APIKEY=12334
+
+# use the value to set the ENV var default
+ENV XDEBUG_PORT=$A_XDEBUG_PORT
+ENV XDEBUG_IDEKEY=$A_XDEBUG_IDEKEY
+ENV APIKEY=$A_APIKEY
+
 # XDEBUG
 RUN { \
     echo '\n\n;Diller: Modified by Docker RUN command\n'; \
@@ -85,4 +95,4 @@ RUN mkdir /tmp/xdebug \
     && chmod 777 /tmp/xdebug
 
 
-RUN composer config --global --auth gitlab-token.gitlab.com glpat-QHdGguHCsCr3F-MeqNc_
+RUN composer config --global --auth gitlab-token.gitlab.com glpat--x-Xas-m4kagTKEaW35x

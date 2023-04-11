@@ -32,12 +32,12 @@
                 <li><strong>Communications consent</strong>
                     <ul>
                         <li>
-                            <strong>Sms</strong> <?= $member['consent']['receiveSms'] ? 'Yes' : "No" ?>
-                            <br>
+                            <strong>Sms</strong> <?= $member['consent']['receiveSms'] ? 'Yes' : "No" ?><br>
                             <strong>Email</strong> <?= $member['consent']['receiveEmail'] ? 'Yes' : "No" ?>
                         </li>
                     </ul>
                 </li>
+                <li><strong>GDPR accepted</strong> <?= $member['consent']['gdpr_accepted'] ? 'Yes' : "No" ?></li>
                 <li><strong>Order history consent</strong> <?= $member['consent']['saveOrderHistory'] ? 'Yes' : "No" ?></li>
                 <li class="button"><button id="edit">Edit personal details</button></li>
             </ul>

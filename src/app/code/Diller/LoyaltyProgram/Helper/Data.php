@@ -2,6 +2,7 @@
 
 namespace Diller\LoyaltyProgram\Helper;
 
+use Exception;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
@@ -58,12 +59,24 @@ class Data extends AbstractHelper{
         return $this->dillerAPI->Stores->getDepartments($this->store_uid);
     }
 
+    public function getSelectedDepartment() {
+        return $this->scopeConfig->getValue('dillerloyalty/settings/department', ScopeInterface::SCOPE_STORE);
+    }
+    public function getSelectedOrderStatus(){
+        return $this->scopeConfig->getValue('dillerloyalty/settings/transaction_status', ScopeInterface::SCOPE_STORE);
+    }
+
 
     // ------------------------------------------------------------------------------
     // --------------------------------------> MEMBER
     // ------------------------------------------------------------------------------
     public function getMemberById($id){
-        return $this->dillerAPI->Members->getMemberById($this->store_uid, $id);
+        try {
+            return $this->dillerAPI->Members->getMemberById($this->store_uid, $id);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
     public function getMember($email = '', $phone = ''){
         return $this->dillerAPI->Members->getMemberByFilter($this->store_uid, $email, $phone);
@@ -72,7 +85,14 @@ class Data extends AbstractHelper{
         return $this->dillerAPI->Coupons->getMemberCoupons($this->store_uid, $member_id);
     }
 
+    public function registerMember($data){
+        return $this->dillerAPI->Members->registerMember($this->store_uid, $data);
+    }
     public function updateMember($member_id, $data){
         return $this->dillerAPI->Members->updateMember($this->store_uid, $member_id, $data);
+    }
+
+    public function createTransaction($member_id, $data){
+        return $this->dillerAPI->Transactions->createTransaction($this->store_uid, $member_id, $data);
     }
 }

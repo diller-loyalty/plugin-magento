@@ -3,14 +3,12 @@
 namespace Diller\LoyaltyProgram\Setup;
 
 use Magento\Eav\Model\Config;
-use Magento\Eav\Setup\EavSetup;
 use Magento\Customer\Model\Customer;
 use Magento\Eav\Setup\EavSetupFactory;
+use Magento\Framework\Setup\InstallDataInterface;
 use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
-use Magento\Framework\Setup\UpgradeDataInterface;
-
-class UpgradeData implements UpgradeDataInterface{
+class InstallData implements InstallDataInterface{
 
     private $eavSetupFactory;
 
@@ -20,11 +18,11 @@ class UpgradeData implements UpgradeDataInterface{
         $this->eavConfig       = $eavConfig;
     }
 
-    public function upgrade(ModuleDataSetupInterface $setup, ModuleContextInterface $context)
+    public function install(ModuleDataSetupInterface $setup, ModuleContextInterface $context)
     {
         $eavSetup = $this->eavSetupFactory->create(['setup' => $setup]);
         $eavSetup->addAttribute(
-            \Magento\Customer\Model\Customer::ENTITY,
+            Customer::ENTITY,
             'diller_member_id',
             [
                 'type'         => 'varchar',

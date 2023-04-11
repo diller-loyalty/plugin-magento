@@ -24,6 +24,9 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+      args:
+        A_XDEBUG_PORT: 9003
+        A_XDEBUG_IDEKEY: DOCKER
     restart: unless-stopped
     ports:
       - '80:80'

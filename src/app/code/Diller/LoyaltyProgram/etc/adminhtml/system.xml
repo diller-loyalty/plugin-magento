@@ -22,10 +22,6 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <label>Enable Loyalty Program</label>
                 </field>
-                <field id="department" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <source_model>Diller\LoyaltyProgram\Model\Config\Source\StoreDepartments</source_model>
-                    <label>Department</label>
-                </field>
                 <field id="store_uid" translate="label comment" type="text" showInDefault="1" showInWebsite="0" showInStore="1" >
                     <label>Store UID</label>
                     <validate>required-entry</validate>
@@ -40,6 +36,14 @@
                     <depends>
                         <field id="loyalty_program_enabled">1</field>
                     </depends>
+                </field>
+                <field id="department" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <source_model>Diller\LoyaltyProgram\Model\Config\Source\StoreDepartments</source_model>
+                    <label>Department</label>
+                </field>
+                <field id="transaction_status" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
+                    <label>Send order to Diller when order is in the following status</label>
                 </field>
             </group>
         </section>
