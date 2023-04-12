@@ -3,6 +3,8 @@
 namespace Diller\LoyaltyProgram\Helper;
 
 use Exception;
+use DillerAPI\DillerAPI;
+use DillerApi\Configuration;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
@@ -34,8 +36,15 @@ class Data extends AbstractHelper{
         ScopeConfigInterface $scopeConfig
     ) {
         $this->scopeConfig = $scopeConfig;
+
+
+        //$configs = clone Configuration::getDefaultConfiguration();
+        // production host
+        // $configs->setHost("https://api.dillerapp.com");
+        //$configs->setUserAgent("DillerLoyaltyPlugin/Magento v1.0.0");
+
         $this->store_uid = $this->scopeConfig->getValue('dillerloyalty/settings/store_uid', ScopeInterface::SCOPE_STORE);
-        $this->dillerAPI = new \DillerAPI\DillerAPI($this->store_uid, $this->scopeConfig->getValue('dillerloyalty/settings/api_key', ScopeInterface::SCOPE_STORE));
+        $this->dillerAPI = new DillerAPI($this->store_uid, $this->scopeConfig->getValue('dillerloyalty/settings/api_key', ScopeInterface::SCOPE_STORE));
 
         parent::__construct($context);
     }

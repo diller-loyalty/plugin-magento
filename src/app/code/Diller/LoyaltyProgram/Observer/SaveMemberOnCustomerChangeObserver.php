@@ -92,17 +92,19 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                     "selected_options" => array()
                 );
                 $member_choice = $params_segments['segment_' . $storeSegment['id']];
-                if($storeSegment['type'] === 'Checkbox' || $storeSegment['type'] === 'Dropdown' || $storeSegment['type'] === 'Radio') {
-                    $result["selected_options"] = is_array($member_choice) ? $member_choice : [(int)$member_choice];
-                }else{
-                    $result["value"] = $member_choice;
+                if(!empty($member_choice)){
+                    if($storeSegment['type'] === 'Checkbox' || $storeSegment['type'] === 'Dropdown' || $storeSegment['type'] === 'Radio') {
+                        $result["selected_options"] = is_array($member_choice) ? $member_choice : [(int)$member_choice];
+                    }else{
+                        $result["value"] = $member_choice;
+                    }
+                    $member_segments[] = $result;
                 }
-                $member_segments[] = $result;
             }
         }
 
 
-        $is_member = false;
+        $is_member = $member_id = false;
 
         /** @var CustomerInterface $customer */
         $customer = $event->getData('customer_data_object');
@@ -119,7 +121,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
         // Search member by phone number from Diller
         if(!$is_member && !empty($params['loyalty_phone_number'])){
             $phone = preg_replace("/[^0-9+]/", "", $params['loyalty_phone_number'] ?? "");
-            $country_code = $params['country_code'] ?? "NO";
+            $country_code = strtoupper($params['country_code']) ?? "NO";
 
             // Check if phone is in international format
             if(preg_match("/^(\+|00)/", $phone)){
@@ -129,7 +131,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
 
             try {
                 if(($phone_number_proto = PhoneNumberUtil::getInstance()->parse($phone, $country_code)) && PhoneNumberUtil::getInstance()->isValidNumber($phone_number_proto)) {
-                    $phone_country_code = '00' . $phone_number_proto->getCountryCode();
+                    $phone_country_code = '+' . $phone_number_proto->getCountryCode();
                     $phone_national_number = $phone_number_proto->getNationalNumber();
                     $country_code = PhoneNumberUtil::getInstance()->getRegionCodeForNumber($phone_number_proto);
 
@@ -162,13 +164,16 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                 ),
                 "consent" => array(
                     "gdpr_accepted" => true,
-                    "save_order_history" => $params['loyalty_consent_order_history'] === 'on',
-                    "receive_sms" => $params['loyalty_consent_sms'] === 'on',
-                    "receive_email" => $params['loyalty_consent_email'] === 'on'
+                    "receive_sms" => true,
+                    "receive_email" => true,
+                    "save_order_history" => $params['loyalty_consent_order_history'] === 'on'
                 ),
                 "department_ids" => $params['department'] ?? [$store_department_id],
                 "segments" => $member_segments
             );
+
+            if(array_key_exists('loyalty_consent_sms', $params)) $params["consent"]["receive_sms"] = $params['loyalty_consent_sms'] === 'on';
+            if(array_key_exists('loyalty_consent_email', $params)) $params["consent"]["receive_email"] = $params['loyalty_consent_email'] === 'on';
 
             if($params['birth_date']) $member_object['birth_date'] = (string)date('Y-m-d', strtotime($params['birth_date']));
             if($params['gender']) $member_object['gender'] = $params['gender'];
@@ -178,24 +183,23 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                     "city" => $params['city'] ?? '',
                     "zip_code" => isset($params['zip_code']) ? filter_var($params['zip_code'], FILTER_SANITIZE_NUMBER_INT) : '',
                     "state" => $params['state'] ?? '',
-                    "country_code" => $params['country_code'] ?? ''
+                    "country_code" => strtoupper($params['country_code']) ?? ''
                 );
             }
-
 
             // register member in Diller
             if(!$is_member){
                 try {
                     $member = $this->loyaltyHelper->registerMember(json_encode($member_object));
                 } catch (\DillerAPI\ApiException $e){
-                    echo $e->getResponseBody();
+                    Mage::app()->getResponse()->setBody(Mage::helper('customer')->__(json_decode($e->getResponseBody())->detail));
                 }
             }else{
                 // update member
                 try {
                     $member = $this->loyaltyHelper->updateMember($member['id'], json_encode($member_object));
                 } catch (\DillerAPI\ApiException $e){
-                    echo $e->getResponseBody();
+                    Mage::app()->getResponse()->setBody(Mage::helper('customer')->__(json_decode($e->getResponseBody())->detail));
                 }
             }
         }
