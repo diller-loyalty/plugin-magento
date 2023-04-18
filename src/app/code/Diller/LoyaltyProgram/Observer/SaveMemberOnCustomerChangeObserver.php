@@ -70,9 +70,6 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
     public function execute(Observer $observer) {
         $event = $observer->getEvent();
 
-        // get config department id
-        $store_department_id = $this->loyaltyHelper->getSelectedDepartment();
-
         // Get observer parameters
         $params = $this->request->getParams();
 
@@ -168,7 +165,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                     "receive_email" => true,
                     "save_order_history" => $params['loyalty_consent_order_history'] === 'on'
                 ),
-                "department_ids" => $params['department'] ?? [$store_department_id],
+                "department_ids" => $params['department'] ?? [],
                 "segments" => $member_segments
             );
 

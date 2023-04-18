@@ -20,6 +20,7 @@ class InstallData implements InstallDataInterface{
 
     public function install(ModuleDataSetupInterface $setup, ModuleContextInterface $context)
     {
+        // member_id field to customer
         $eavSetup = $this->eavSetupFactory->create(['setup' => $setup]);
         $eavSetup->addAttribute(
             Customer::ENTITY,

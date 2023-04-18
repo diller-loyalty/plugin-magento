@@ -3,8 +3,7 @@
     /** @var Member $block */
 
     $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
-    ?>
-<?php
+
     if($block->getCustomer()){
         $customer_email = $block->getCustomer()->getEmail();
         $member = $block->getMemberByEmail($customer_email);
@@ -14,7 +13,7 @@
     $storeSegments = $loyaltyHelper->getStoreSegments();
     $storeDepartments = $loyaltyHelper->getStoreDepartments();
 ?>
-<fieldset class="fieldset create account">
+<fieldset class="fieldset account <?= (isset($member) && array_key_exists('id', $member)) ? ('update member_' . $member['id']) : 'create' ?>">
     <legend class="legend"><span><?= $loyaltyDetails['storeName'] ?></span></legend><br>
     <div class="field phonenumber">
         <label class="label" for="phonenumber">
@@ -213,7 +212,7 @@
                     <?= !empty($member) ? ($member['consent']['gdprAccepted'] ? 'checked' : '') : '' ?>
                 >
                 <label for="loyalty_consent" class="label">
-                    <span>I want to join <?= $loyaltyDetails['storeName'] ?>'s loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like. Read our <a target="_blank" href="https://diller.app/<?= urlencode($loyaltyDetails["storeName"]) ?>/privacy-policy">privacy policy here</a></span>
+                    <span>I want to join <?= $loyaltyDetails['storeName'] ?>'s loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like. Read our <a target="_blank" href="<?= $loyaltyDetails["privacyPolicyUrl"] ?>">privacy policy here</a></span>
                 </label>
             </div>
             <div class="option">

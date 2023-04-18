@@ -1,7 +1,5 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="xDebug" type="PhpRemoteDebugRunConfigurationType" factoryName="PHP Remote Debug" filter_connections="FILTER" server_name="Magento" session_id="XDEBUG_SESSION">
-    <method v="2">
-      <option name="LaunchBrowser.Before.Run" url="http://magento.test/admin" />
-    </method>
+    <method v="2" />
   </configuration>
 </component>
