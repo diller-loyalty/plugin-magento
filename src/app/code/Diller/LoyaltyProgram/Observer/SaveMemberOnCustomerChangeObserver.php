@@ -196,7 +196,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                 try {
                     $member = $this->loyaltyHelper->updateMember($member['id'], json_encode($member_object));
                 } catch (\DillerAPI\ApiException $e){
-                    Mage::app()->getResponse()->setBody(Mage::helper('customer')->__(json_decode($e->getResponseBody())->detail));
+                    return false;
                 }
             }
         }

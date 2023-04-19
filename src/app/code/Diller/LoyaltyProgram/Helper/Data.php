@@ -2,13 +2,14 @@
 
 namespace Diller\LoyaltyProgram\Helper;
 
-use Exception;
-use libphonenumber\PhoneNumberUtil;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Store\Model\ScopeInterface;
+
+use libphonenumber\PhoneNumberUtil;
+use Exception;
 
 /**
  * Diller API helper
@@ -27,6 +28,9 @@ class Data extends AbstractHelper{
      */
     private $store_uid;
 
+    /**
+     * @var CustomerRepositoryInterface
+     */
     protected $customerRepository;
 
     /**
@@ -34,18 +38,14 @@ class Data extends AbstractHelper{
      * @param ScopeConfigInterface $scopeConfig
      * @param CustomerRepositoryInterface $customerRepository
      */
-    public function __construct(
-        Context $context,
-        ScopeConfigInterface $scopeConfig,
-        CustomerRepositoryInterface $customerRepository
-    ) {
+    public function __construct(Context $context, ScopeConfigInterface $scopeConfig, CustomerRepositoryInterface $customerRepository) {
         $this->scopeConfig = $scopeConfig;
         $this->customerRepository = $customerRepository;
 
-
         $configs = clone \DillerAPI\Configuration::getDefaultConfiguration();
-        // production host
+        // to set module to production mode
         // $configs->setHost("https://api.dillerapp.com");
+
         $configs->setUserAgent("DillerLoyaltyPlugin/Magento v1.0.0");
 
         $this->store_uid = $this->scopeConfig->getValue('dillerloyalty/settings/store_uid', ScopeInterface::SCOPE_STORE);
@@ -60,7 +60,6 @@ class Data extends AbstractHelper{
     public function getLoyaltyDetails() {
         return $this->dillerAPI->Stores->get($this->store_uid);
     }
-
     public function getStoreMembershipLevels() {
         return $this->dillerAPI->MembershipLevel->getStoreMembershipLevel($this->store_uid);
     }
@@ -84,30 +83,6 @@ class Data extends AbstractHelper{
     // ------------------------------------------------------------------------------
     // --------------------------------------> MEMBER
     // ------------------------------------------------------------------------------
-    public function searchMemberByCustomerId($id){
-        if($customer = $this->customerRepository->getById($id)){
-            // search member with diller_member_id customer attribute
-            if($attribute = $customer->getCustomAttribute('diller_member_id')){
-                if($member = $this->getMemberById($attribute->getValue())){
-                    return $member;
-                }
-            }
-
-            $customer_phone_number = $this->getCustomerPhoneNumber($id);
-            $result = $this->getMember('', $customer_phone_number['country_code'].$customer_phone_number['national_number']);
-            if(!empty($result)){
-                return $result[0];
-            }
-
-            // search member by customer email
-            $result = $this->getMember($customer->getEmail());
-            if(!empty($result)){
-                return $result[0];
-            }
-        }
-        return false;
-    }
-
     public function getMemberById($id){
         try {
             return $this->dillerAPI->Members->getMemberById($this->store_uid, $id);
@@ -134,7 +109,31 @@ class Data extends AbstractHelper{
         return $this->dillerAPI->Transactions->createTransaction($this->store_uid, $member_id, $data);
     }
 
-    // customer related methods
+    // ----------------------------------------------------> Magento customer related methods
+    public function searchMemberByCustomerId($id){
+        if($customer = $this->customerRepository->getById($id)){
+            // search member with diller_member_id customer attribute
+            if($attribute = $customer->getCustomAttribute('diller_member_id')){
+                if($member = $this->getMemberById($attribute->getValue())){
+                    return $member;
+                }
+            }
+
+            $customer_phone_number = $this->getCustomerPhoneNumber($id);
+            $result = $this->getMember('', $customer_phone_number['country_code'].$customer_phone_number['national_number']);
+            if(!empty($result)){
+                return $result[0];
+            }
+
+            // search member by customer email
+            $result = $this->getMember($customer->getEmail());
+            if(!empty($result)){
+                return $result[0];
+            }
+        }
+        return false;
+    }
+
     public function getCustomerPhoneNumber($id){
         if($customer = $this->customerRepository->getById($id)) {
             if ($addresses = $customer->getAddresses()) {

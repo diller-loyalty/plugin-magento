@@ -4,124 +4,83 @@ namespace Diller\LoyaltyProgram\Observer;
 
 use Diller\LoyaltyProgram\Helper\Data;
 use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Model\Customer;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Registry;
 use Magento\Sales\Model\Order;
 
-use libphonenumber\PhoneNumberUtil;
-use Exception;
-
 class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
     protected $request;
+    protected $customer;
     protected $_coreRegistry;
     protected $customerRepository;
     protected Data $loyaltyHelper;
 
-    /**
-     * Constructor
-     *
-     * @param RequestInterface $request
-     * @param Registry $coreRegistry
-     * @param CustomerRepositoryInterface $customerRepository
-     * @param Data $loyaltyHelper
-     */
-    public function __construct(
-        RequestInterface $request,
-        Registry $coreRegistry,
-        CustomerRepositoryInterface $customerRepository,
-        Data $loyaltyHelper
-    ) {
+    public function __construct(RequestInterface $request, Customer $customer, Registry $coreRegistry, CustomerRepositoryInterface $customerRepository, Data $loyaltyHelper) {
         $this->request = $request;
+        $this->customer = $customer;
         $this->_coreRegistry = $coreRegistry;
         $this->customerRepository = $customerRepository;
         $this->loyaltyHelper = $loyaltyHelper;
     }
 
     /**
-     * Save order into registry to use it in the overloaded controller.
+     * Sent transaction to Diller if consent was given and if the order status matches the status chosen in the module backoffice.
      *
      * @param EventObserver $observer
      * @return true
      */
     public function execute(EventObserver $observer){
-        /** @var Order $order */
         $event = $observer->getEvent();
         $order = $event->getOrder();
+
         if ($order instanceof \Magento\Framework\Model\AbstractModel) {
-            $diller_consent = $diller_order_history_consent = 0;
+            $is_member = false;
 
-            if($quote = $event->getQuote()){
-                $diller_consent = (boolean)$quote->getData('diller_consent');
-                $diller_order_history_consent = (boolean)$quote->getData('diller_order_history_consent');
+            // get Diller consents from order object
+            $diller_consent = (boolean)($order->getData('diller_consent') ?? 0);
+            $diller_order_history_consent = (boolean)($order->getData('diller_order_history_consent') ?? 0);
+
+            // get member id from order object
+            if($member_id = $order->getData('diller_member_id')){
+                $is_member = ($member = $this->loyaltyHelper->getMemberById($member_id));
             }
 
-            $is_member = $valid_phone_number = false;
+            if(!$is_member){
+                // get customer from order
+                if(!$order->getData("customer_is_guest")){
+                    if($customer_id = $order->getData("customer_id")){
+                        $is_member = ($member = $this->loyaltyHelper->searchMemberByCustomerId($customer_id));
 
-            // get customer from order
-            if(!$order->getData("customer_is_guest")){
-                if($customer_id = $order->getData("customer_id")){
-                    $is_member = ($member = $this->loyaltyHelper->searchMemberByCustomerId($customer_id));
-                }
-
-                // get customer phone number
-                if(!$is_member){
-                    $valid_phone_number = ($customer_phone_number = $this->loyaltyHelper->getCustomerPhoneNumber($customer_id));
-                }
-            }
-
-            // get phone number from shipping address
-            if(!$valid_phone_number){
-                $valid_phone_number = ($customer_phone_number = $this->loyaltyHelper->getPhoneNumberFromAddress($order->getShippingAddress()));
-            }
-
-            // get checkout consent and register member
-            if(!$is_member && $valid_phone_number && $diller_consent){
-                $member_object = array(
-                    "first_name" => $order->getCustomerFirstname(),
-                    "last_name" => $order->getCustomerLastname(),
-                    "email" => $order->getCustomerEmail(),
-                    "phone" => array(
-                        "country_code" => $customer_phone_number['country_code'],
-                        "number" => $customer_phone_number['national_number']
-                    ),
-                    "consent" => array(
-                        "gdpr_accepted" => true,
-                        "receive_sms" => true,
-                        "receive_email" => true,
-                        "save_order_history" => $diller_order_history_consent
-                    ),
-                    "department_ids" => []
-                );
-                if($address = $order->getAddresses()[0]){
-                    $street = $order->getAddresses()[0]->getStreet();
-                    if(!empty($street)){
-                        $result = !empty($street[0]) ? $street[0] : '';
-                        if(!empty($street[1])) $result .= ' ' . $street[1];
-                        $street = $result;
+                        if(!$is_member){
+                            $valid_phone_number = ($customer_phone_number = $this->loyaltyHelper->getCustomerPhoneNumber($customer_id));
+                        }
                     }
-                    $zip_code = $order->getAddresses()[0]->getPostCode();
-                    $member_object['address'] = array(
-                        "street" => $street ?? '',
-                        "city" => $address->getCity() ?? '',
-                        "zip_code" => isset($zip_code) ? filter_var($zip_code, FILTER_SANITIZE_NUMBER_INT) : '',
-                        "state" => $order->getAddresses()[0]->getState() ?? '',
-                        "country_code" => strtoupper($order->getAddresses()[0]->getCountryId()) ?? ''
-                    );
                 }
-                $is_member = ($member = $this->loyaltyHelper->registerMember($member_object));
+
+                // get phone number from shipping address
+                if(!$valid_phone_number){
+                    if($customer_phone_number = $this->loyaltyHelper->getPhoneNumberFromAddress($order->getShippingAddress())){
+                        $result = $this->getMember('', $customer_phone_number['country_code'].$customer_phone_number['national_number']);
+                        if(!empty($result)){
+                            $is_member = ($member = $result[0]);
+                        }
+                    };
+                }
             }
 
             if($is_member){
-                $diller_consent = $member->getConsent()->getGdprAccepted();
-                $diller_order_history_consent = $member->getConsent()->getSaveOrderHistory();
+                if(!$diller_consent) $diller_consent = $member->getConsent()->getGdprAccepted();
+                if(!$diller_order_history_consent) $diller_order_history_consent = $member->getConsent()->getSaveOrderHistory();
 
-                if($diller_order_history_consent){
+                if($diller_consent && $diller_order_history_consent){
 
-//                if($order->getState() !== $this->loyaltyHelper->getSelectedOrderStatus()) {
-//                    return false;
-//                }
+                    //send transaction to Diller when the order status matches the option chosen in the backoffice
+//                    if($order->getState() !== $this->loyaltyHelper->getSelectedOrderStatus()) {
+//                        return true;
+//                    }
 
                     $order_products = $order->getItems();
 
@@ -175,11 +134,17 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
                         return false;
                     }
                 }
-            }
 
-            // save diller consents with order
-            $order->setData('diller_consent', $diller_consent);
-            $order->setData('diller_order_history_consent', $diller_order_history_consent);
+                if($customer_id = $order->getCustomerId()){
+                    if($customer = $this->customer->load($customer_id)){
+                        $customerData = $customer->getDataModel();
+                        $customerData->setCustomAttribute('diller_member_id',(string)$member['id'] ?? '');
+                        $customer->updateData($customerData);
+                        $customerResource = $this->customerFactory->create();
+                        $customerResource->saveAttribute($customer, 'diller_member_id');
+                    };
+                }
+            }
         }
 
         return true;
