@@ -1,20 +1,20 @@
 <?php
-    use Diller\LoyaltyProgram\Block\Frontend\Member;
     /** @var Member $block */
+    use Diller\LoyaltyProgram\Block\Frontend\Member;
 
     $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
-?>
-<?php
-    if($block->getCustomer()){
-        $customer_email = $block->getCustomer()->getEmail();
-        $member = $block->getMemberByEmail($customer_email);
-        if(!empty($member)){
-            $coupons = $block->getMemberCoupons($member['id']);
-        }
+
+    // member details
+    $is_member = false;
+    if($customer = $block->getCustomer()){
+        $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
+        if($is_member) $coupons = $block->getMemberCoupons($member['id']);
     }
+
+    // store details
     $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 ?>
-<?php if(!empty($member) && $loyaltyDetails['pointsSystem']['enabled']) { ?>
+<?php if($is_member && $loyaltyDetails['pointsSystem']['enabled']) { ?>
     <div class="diller-container coupons">
         <h2 class="page-title">
             <span class="base" data-ui-id="page-title-wrapper">Coupons</span>

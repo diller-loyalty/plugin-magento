@@ -4,24 +4,26 @@
 
     $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 
-    if($block->getCustomer()){
-        $customer_email = $block->getCustomer()->getEmail();
-        $member = $block->getMemberByEmail($customer_email);
+    // member details
+    $is_member = false;
+    if($customer = $block->getCustomer()){
+        $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
     }
 
+    // store details
     $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
     $storeSegments = $loyaltyHelper->getStoreSegments();
     $storeDepartments = $loyaltyHelper->getStoreDepartments();
 ?>
-<fieldset class="fieldset account <?= (isset($member) && array_key_exists('id', $member)) ? ('update member_' . $member['id']) : 'create' ?>">
+<fieldset class="fieldset account <?= $is_member ? ('update member_' . $member->getId()) : 'create' ?>">
     <legend class="legend"><span><?= $loyaltyDetails['storeName'] ?></span></legend><br>
     <div class="field phonenumber">
         <label class="label" for="phonenumber">
             <span><?= $block->escapeHtml(__('Phone Number')) ?></span>
         </label>
         <div class="control">
-            <input type="hidden" name="loyalty_phone_countrycode" id="loyalty_phone_countrycode" value="<?= $member['phone']['countryCode'] ?? '' ?>">
-            <input type="text" name="loyalty_phone_number" id="loyalty_phone_number" value="<?= $member['phone']['number'] ?? '' ?>" title="<?= $block->escapeHtmlAttr(__('Phone Number')) ?>" class="input-text">
+            <input type="hidden" name="loyalty_phone_countrycode" id="loyalty_phone_countrycode" value="<?= $member->getPhone()->getCountryCode() ?? '' ?>">
+            <input type="text" name="loyalty_phone_number" id="loyalty_phone_number" value="<?= $member->getPhone()->getNumber() ?? '' ?>" title="<?= $block->escapeHtmlAttr(__('Phone Number')) ?>" class="input-text">
         </div>
     </div>
 
@@ -33,7 +35,7 @@
                 <span><?= $block->escapeHtml(__('Birthdate')) ?></span>
             </label>
             <div class="control flatpickr">
-                <input type="text" placeholder="Select Date... (dd-mm-yyyy)" data-input name="birth_date" id="birth_date" value="<?= isset($member['birthDate']) ? date_format($member['birthDate'],"Y-m-d") : '' ?>" title="<?= $block->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
+                <input type="text" placeholder="Select Date... (dd-mm-yyyy)" data-input name="birth_date" id="birth_date" value="<?= ($member->getBirthDate() != null) ? date_format($member->getBirthDate(),"Y-m-d") : '' ?>" title="<?= $block->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
                 <a class="calendar-button" title="toggle" data-toggle></a>
             </div>
         </div>
@@ -54,7 +56,7 @@
             <div class="control">
                 <?php foreach($genders as $gender ){?>
                     <div class="option">
-                        <input type="radio" name="gender" id="<?= $gender['id'] ?>" value="<?= $gender['name'] ?>" title="<?= $gender['name'] ?>" class="input-radio" <?= !empty($member) ? (($member["gender"] === $gender['name']) ? 'checked' : '') : '' ?>>
+                        <input type="radio" name="gender" id="<?= $gender['id'] ?>" value="<?= $gender['name'] ?>" title="<?= $gender['name'] ?>" class="input-radio" <?= $is_member ? (($member->getGender() === $gender['name']) ? 'checked' : '') : '' ?>>
                         <label for="<?= $gender['id'] ?>"><?= $gender['name'] ?></label>
                     </div>
                 <?php } ?>
@@ -67,7 +69,7 @@
                 <span><?= $block->escapeHtml(__('Address')) ?></span>
             </label>
             <div class="control">
-                <input type="text" name="address" id="address" value="<?= $member['address']['street'] ?? ''  ?>" title="<?= $block->escapeHtmlAttr(__('Address')) ?>" class="input-text">
+                <input type="text" name="address" id="address" value="<?= $member->getAddress()->getStreet() ?? ''  ?>" title="<?= $block->escapeHtmlAttr(__('Address')) ?>" class="input-text">
             </div>
         </div>
 
@@ -77,7 +79,7 @@
                 <span><?= $block->escapeHtml(__('Zip Code')) ?></span>
             </label>
             <div class="control">
-                <input type="text" name="zip_code" id="zip_code" value="<?= $member['address']['zipCode'] ?? ''  ?>" title="<?= $block->escapeHtmlAttr(__('Zip Code')) ?>" class="input-text">
+                <input type="text" name="zip_code" id="zip_code" value="<?= $member->getAddress()->getZipCode() ?? ''  ?>" title="<?= $block->escapeHtmlAttr(__('Zip Code')) ?>" class="input-text">
             </div>
         </div>
 
@@ -87,7 +89,7 @@
                 <span><?= $block->escapeHtml(__('City')) ?></span>
             </label>
             <div class="control">
-                <input type="text" name="city" id="city" value="<?= $member['address']['city'] ?? ''  ?>" title="<?= $block->escapeHtmlAttr(__('City')) ?>" class="input-text">
+                <input type="text" name="city" id="city" value="<?= $member->getAddress()->getCity() ?? ''  ?>" title="<?= $block->escapeHtmlAttr(__('City')) ?>" class="input-text">
             </div>
         </div>
 
@@ -107,7 +109,7 @@
             if ($segment['isVisibleToFollower']) {
 
                 $memberResponse = ['value' => '', 'selectedOptions' => []];
-                if(!empty($member)){
+                if($is_member){
                     foreach($member['segments'] as $segmentResponse){
                         if($segmentResponse['id'] == $segment['id']){
                             $memberResponse = $segmentResponse;
@@ -190,7 +192,7 @@
                 <div class="control">
                     <?php foreach($storeDepartments as $option ){?>
                         <div class="option">
-                            <input type="checkbox" name="department[]" id="<?= $option['id'] ?>" value="<?= $option['id'] ?>" title="<?= $option['name'] ?>" class="input-checkbox" <?= !empty($member) ? (in_array($option['id'], $member['departmentIds']) ? 'checked' : '') : '' ?>>
+                            <input type="checkbox" name="department[]" id="<?= $option['id'] ?>" value="<?= $option['id'] ?>" title="<?= $option['name'] ?>" class="input-checkbox" <?= $is_member ? (in_array($option['id'], $member['departmentIds']) ? 'checked' : '') : '' ?>>
                             <label for="<?= $option['id'] ?>"><?= $option['name'] ?></label>
                         </div>
                     <?php } ?>
@@ -209,7 +211,7 @@
                        name="loyalty_consent"
                        id="loyalty_consent"
                        class="checkbox"
-                    <?= !empty($member) ? ($member['consent']['gdprAccepted'] ? 'checked' : '') : '' ?>
+                    <?= $is_member ? ($member->getConsent()->getGDPRAccepted() ? 'checked' : '') : '' ?>
                 >
                 <label for="loyalty_consent" class="label">
                     <span>I want to join <?= $loyaltyDetails['storeName'] ?>'s loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like. Read our <a target="_blank" href="<?= $loyaltyDetails["privacyPolicyUrl"] ?>">privacy policy here</a></span>
@@ -220,22 +222,19 @@
                        name="loyalty_consent_order_history"
                        id="loyalty_consent_order_history"
                        class="checkbox"
-                    <?= !empty($member) ? ($member['consent']['saveOrderHistory'] ? 'checked' : '') : '' ?>
+                    <?= $is_member ? ($member->getConsent()->getSaveOrderHistory() ? 'checked' : '') : '' ?>
                 >
                 <label for="loyalty_consent_order_history" class="label">
                     <span> I want to get offers and benefits that suit me based on my preferences and purchase history.</span>
                 </label>
             </div>
-            <?php
-                // TODO: wait for privacy policy url ON LOYALTY DETAILS
-            ?>
-        <?php if (!empty($member)){ ?>
+        <?php if ($is_member){ ?>
                 <div class="option">
                     <input type="checkbox"
                            name="loyalty_consent_sms"
                            id="loyalty_consent_sms"
                            class="checkbox"
-                           <?= $member['consent']['receiveSms'] ? 'checked' : '' ?>
+                           <?= $member->getConsent()->getReceiveSms() ? 'checked' : '' ?>
                     >
                     <label for="loyalty_consent_sms" class="label">
                         <span>SMS: I want to receive benefits, offers and other marketing electronically in connection with the customer club via SMS.</span>
@@ -246,7 +245,7 @@
                            name="loyalty_consent_email"
                            id="loyalty_consent_email"
                            class="checkbox"
-                            <?= $member['consent']['receiveEmail'] ? 'checked' : '' ?>
+                            <?= $member->getConsent()->getReceiveEmail() ? 'checked' : '' ?>
                     >
                     <label for="loyalty_consent_email" class="label">
                         <span>E-mail: I want to receive benefits, offers and other marketing electronically in connection with the customer club by E-mail.</span>
@@ -257,6 +256,7 @@
     </div>
 </fieldset>
 <script type="text/javascript">
+    // INTL phone number validation
     require(['jquery','intl'],function($){
         $(window).on('load', function() {
             const phoneNumberInput = window.activePhoneNumberInput = document.querySelector("input#loyalty_phone_number");
@@ -337,10 +337,8 @@
             }
         };
     });
-</script>
-<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Diller_LoyaltyProgram::node_modules/intl-tel-input/build/css/intlTelInput.css') ?>" />
 
-<script type="text/javascript">
+    // Date picker
     require(['jquery','flatpicker'],function($){
         $(window).on('load', function() {
             flatpickr(".flatpickr", {
@@ -353,20 +351,20 @@
             });
         });
     });
-</script>
-<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Diller_LoyaltyProgram::node_modules/flatpickr/dist/flatpickr.css') ?>" />
 
-<script type="text/javascript">
+    // Country select script
     require(['jquery','countryselect'],function($){
         $("input#country").countrySelect({
-            defaultCountry: "<?= !empty($member) ? strtolower($member['address']['countryCode'] ?? 'no') : '' ?>",
+            defaultCountry: "<?= !$is_member ? strtolower($member->getAddress()->getCountryCode() ?? 'no') : '' ?>",
             preferredCountries: ['no', 'us', 'ca', 'gb', 'se', 'dk', 'fi'],
             responsiveDropdown: true
         });
     });
 </script>
-<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Diller_LoyaltyProgram::node_modules/country-select-js/build/css/countrySelect.css') ?>" />
 
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Diller_LoyaltyProgram::node_modules/intl-tel-input/build/css/intlTelInput.css') ?>" />
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Diller_LoyaltyProgram::node_modules/flatpickr/dist/flatpickr.css') ?>" />
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Diller_LoyaltyProgram::node_modules/country-select-js/build/css/countrySelect.css') ?>" />
 <style>
     .field > .label{
         font-weight:bold;

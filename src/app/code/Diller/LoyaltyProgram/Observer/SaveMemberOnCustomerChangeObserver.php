@@ -68,7 +68,11 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
      * @throws LocalizedException
      */
     public function execute(Observer $observer) {
+        $is_member = $valid_phone_number = $phone_country_code = $phone_national_number = false;
         $event = $observer->getEvent();
+
+        // get customer object
+        $customer = $event->getData('customer_data_object');
 
         // Get observer parameters
         $params = $this->request->getParams();
@@ -80,40 +84,8 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
             ARRAY_FILTER_USE_KEY
         );
 
-        $member_segments = [];
-        foreach ($this->loyaltyHelper->getStoreSegments() as $storeSegment){
-            if(isset($params_segments['segment_'.$storeSegment['id']]) && !empty($params_segments['segment_'.$storeSegment['id']])){
-                $result = array(
-                    "segment_id" => $storeSegment['id'],
-                    "value" => '',
-                    "selected_options" => array()
-                );
-                $member_choice = $params_segments['segment_' . $storeSegment['id']];
-                if(!empty($member_choice)){
-                    if($storeSegment['type'] === 'Checkbox' || $storeSegment['type'] === 'Dropdown' || $storeSegment['type'] === 'Radio') {
-                        $result["selected_options"] = is_array($member_choice) ? $member_choice : [(int)$member_choice];
-                    }else{
-                        $result["value"] = $member_choice;
-                    }
-                    $member_segments[] = $result;
-                }
-            }
-        }
-
-
-        $is_member = $member_id = false;
-
-        /** @var CustomerInterface $customer */
-        $customer = $event->getData('customer_data_object');
-        $customer_email = $customer->getEmail();
-
-        // look for customer attribute on Magento that has the Diller member ID
-        if($attribute = $customer->getCustomAttribute('diller_member_id')){
-            if($member = $this->loyaltyHelper->getMemberById($attribute->getValue())){
-                $member_id = $attribute->getValue();
-                $is_member = true;
-            }
-        }
+        // check if customer is member
+        $is_member = ($member = $this->loyaltyHelper->searchMemberByCustomerId($customer->getID()));
 
         // Search member by phone number from Diller
         if(!$is_member && !empty($params['loyalty_phone_number'])){
@@ -132,32 +104,47 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                     $phone_national_number = $phone_number_proto->getNationalNumber();
                     $country_code = PhoneNumberUtil::getInstance()->getRegionCodeForNumber($phone_number_proto);
 
+                    $valid_phone_number = true;
+
                     // check if customer is a Diller member
                     $result = $this->loyaltyHelper->getMember('', $phone_country_code.$phone_national_number);
                     if(!empty($result)){
-                        $member = $result[0];
-                        $is_member = true;
+                        $is_member = ($member = $result[0]);
                     }
                 }
             }
             catch (Exception $ex){}
         }
 
-        // Search member by email from Diller
-        if(!$is_member){
-            $search = $this->loyaltyHelper->getMember($customer_email);
-            if(!empty($search)) $member = $search[0];
-        }
-
         // check loyalty consent
-        if($params['loyalty_consent'] === 'on'){
+        if($params['loyalty_consent'] === 'on' && ($is_member || $valid_phone_number)){
+            $member_segments = [];
+            foreach ($this->loyaltyHelper->getStoreSegments() as $storeSegment){
+                if(isset($params_segments['segment_'.$storeSegment['id']]) && !empty($params_segments['segment_'.$storeSegment['id']])){
+                    $result = array(
+                        "segment_id" => $storeSegment['id'],
+                        "value" => '',
+                        "selected_options" => array()
+                    );
+                    $member_choice = $params_segments['segment_' . $storeSegment['id']];
+                    if(!empty($member_choice)){
+                        if($storeSegment['type'] === 'Checkbox' || $storeSegment['type'] === 'Dropdown' || $storeSegment['type'] === 'Radio') {
+                            $result["selected_options"] = is_array($member_choice) ? $member_choice : [(int)$member_choice];
+                        }else{
+                            $result["value"] = $member_choice;
+                        }
+                        $member_segments[] = $result;
+                    }
+                }
+            }
+
             $member_object = array(
                 "first_name" => $params['firstname'],
                 "last_name" => $params['lastname'],
-                "email" => $customer_email,
+                "email" => $customer->getEmail(),
                 "phone" => array(
-                    "country_code" => $phone_country_code ?? $params['loyalty_phone_countrycode'],
-                    "number" => $phone_national_number ?? $params['loyalty_phone_number']
+                    "country_code" => $phone_country_code,
+                    "number" => $phone_national_number
                 ),
                 "consent" => array(
                     "gdpr_accepted" => true,
@@ -202,9 +189,8 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
         }
 
         // save customer attribute with Diller member ID
-        if(isset($member['id']) && $member_id !== $member['id']){
-            $customerId = $customer->getID();
-            $customer = $this->customer->load($customerId);
+        if(isset($member['id'])){
+            $customer = $this->customer->load($customer->getID());
             $customerData = $customer->getDataModel();
             $customerData->setCustomAttribute('diller_member_id',(string)$member['id'] ?? '');
             $customer->updateData($customerData);
