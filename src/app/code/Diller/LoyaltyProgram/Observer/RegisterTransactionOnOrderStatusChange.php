@@ -5,6 +5,7 @@ namespace Diller\LoyaltyProgram\Observer;
 use Diller\LoyaltyProgram\Helper\Data;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Model\Customer;
+use Magento\Customer\Model\ResourceModel\CustomerFactory;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer as EventObserver;
@@ -15,13 +16,15 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
     protected $request;
     protected $customer;
     protected $_coreRegistry;
+    protected $customerFactory;
     protected $customerRepository;
     protected Data $loyaltyHelper;
 
-    public function __construct(RequestInterface $request, Customer $customer, Registry $coreRegistry, CustomerRepositoryInterface $customerRepository, Data $loyaltyHelper) {
+    public function __construct(RequestInterface $request, Customer $customer, Registry $coreRegistry, CustomerFactory $customerFactory, CustomerRepositoryInterface $customerRepository, Data $loyaltyHelper) {
         $this->request = $request;
         $this->customer = $customer;
         $this->_coreRegistry = $coreRegistry;
+        $this->customerFactory = $customerFactory;
         $this->customerRepository = $customerRepository;
         $this->loyaltyHelper = $loyaltyHelper;
     }
@@ -37,7 +40,7 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
         $order = $event->getOrder();
 
         if ($order instanceof \Magento\Framework\Model\AbstractModel) {
-            $is_member = false;
+            $is_member = $valid_phone_number = false;
 
             // get Diller consents from order object
             $diller_consent = (boolean)($order->getData('diller_consent') ?? 0);
@@ -63,7 +66,7 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
                 // get phone number from shipping address
                 if(!$valid_phone_number){
                     if($customer_phone_number = $this->loyaltyHelper->getPhoneNumberFromAddress($order->getShippingAddress())){
-                        $result = $this->getMember('', $customer_phone_number['country_code'].$customer_phone_number['national_number']);
+                        $result = $this->loyaltyHelper->getMember('', $customer_phone_number['country_code'].$customer_phone_number['national_number']);
                         if(!empty($result)){
                             $is_member = ($member = $result[0]);
                         }

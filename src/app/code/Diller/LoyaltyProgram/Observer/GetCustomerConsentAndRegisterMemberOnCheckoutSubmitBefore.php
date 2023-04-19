@@ -5,6 +5,7 @@
     use Diller\LoyaltyProgram\Helper\Data;
     use Magento\Customer\Api\CustomerRepositoryInterface;
     use Magento\Customer\Model\Customer;
+    use Magento\Customer\Model\ResourceModel\CustomerFactory;
     use Magento\Framework\App\RequestInterface;
     use Magento\Framework\Event\ObserverInterface;
     use Magento\Framework\Event\Observer as EventObserver;
@@ -15,13 +16,15 @@
         protected $request;
         protected $customer;
         protected $_coreRegistry;
+        protected $customerFactory;
         protected $customerRepository;
         protected Data $loyaltyHelper;
 
-        public function __construct(RequestInterface $request, Customer $customer, Registry $coreRegistry, CustomerRepositoryInterface $customerRepository, Data $loyaltyHelper) {
+        public function __construct(RequestInterface $request, Customer $customer, Registry $coreRegistry, CustomerFactory $customerFactory, CustomerRepositoryInterface $customerRepository, Data $loyaltyHelper) {
             $this->request = $request;
             $this->customer = $customer;
             $this->_coreRegistry = $coreRegistry;
+            $this->customerFactory = $customerFactory;
             $this->customerRepository = $customerRepository;
             $this->loyaltyHelper = $loyaltyHelper;
         }
