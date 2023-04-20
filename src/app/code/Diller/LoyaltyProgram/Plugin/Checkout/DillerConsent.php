@@ -17,9 +17,10 @@ class DillerConsent implements LayoutProcessorInterface{
 
     public function process($jsLayout){
         $loyaltyDetails = $this->_loyaltyHelper->getLoyaltyDetails();
+        $is_member = false;
 
-        if(array_contains($_SESSION['customer_base'], 'customer_id')){
-            $member = $this->_loyaltyHelper->searchMemberByCustomerId($_SESSION['customer_base']['customer_id']);
+        if($customer_id = $_SESSION['customer_base']['customer_id']){
+            $is_member = ($member = $this->_loyaltyHelper->searchMemberByCustomerId($customer_id));
         }
 
         $attributeCode = 'diller_consent';
@@ -33,12 +34,12 @@ class DillerConsent implements LayoutProcessorInterface{
                 'elementTmpl' => 'ui/form/element/checkbox',
                 'label' => "I want to join ".$loyaltyDetails['storeName']."'s loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like.",
                 'id' => $attributeCode,
-                'value' => (isset($member) && $member->getConsent()->getGdprAccepted()) ? true : ''
+                'value' => ($is_member && $member->getConsent()->getGdprAccepted()) ? true : ''
             ],
             'dataScope' => 'shippingAddress.' . $attributeCode,
             'label' => $loyaltyDetails['storeName'] . ' consent',
             'provider' => 'checkoutProvider',
-            'visible' => true,
+            'visible' => !$is_member,
             'validation' => [],
             'sortOrder' => 1000,
             'id' => $attributeCode
@@ -56,12 +57,12 @@ class DillerConsent implements LayoutProcessorInterface{
                 'elementTmpl' => 'ui/form/element/checkbox',
                 'label' => "I want to get offers and benefits that suit me based on my preferences and purchase history.",
                 'id' => $attributeCode,
-                'value' => (isset($member) && $member->getConsent()->getSaveOrderHistory()) ? true : ''
+                'value' => ($is_member && $member->getConsent()->getSaveOrderHistory()) ? true : ''
             ],
             'dataScope' => 'shippingAddress.' . $attributeCode,
             'label' => $loyaltyDetails['storeName'] . ' consent',
             'provider' => 'checkoutProvider',
-            'visible' => true,
+            'visible' => !$is_member,
             'validation' => [],
             'sortOrder' => 1001,
             'id' => $attributeCode

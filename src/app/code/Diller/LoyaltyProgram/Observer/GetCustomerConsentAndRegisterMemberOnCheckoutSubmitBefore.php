@@ -110,6 +110,7 @@
                     }
                     if($member = $this->loyaltyHelper->registerMember($member_object)){
                         $order->setData('diller_member_id', $member['id']);
+                        $is_member = true;
                         if($customer_id = $order->getCustomerId()){
                             if($customer = $this->customer->load($customer_id)){
                                 $customerData = $customer->getDataModel();
@@ -117,9 +118,14 @@
                                 $customer->updateData($customerData);
                                 $customerResource = $this->customerFactory->create();
                                 $customerResource->saveAttribute($customer, 'diller_member_id');
-                            };
+                            }
                         }
                     }
+                }
+
+                // reserve coupon / stamp card
+                if($is_member && ($coupon = $order->getCoupon())){
+
                 }
             }
             return true;
