@@ -2,6 +2,7 @@
 
 namespace Diller\LoyaltyProgram\Helper;
 
+use DillerAPI\DillerAPI;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Helper\AbstractHelper;
@@ -24,7 +25,7 @@ class Data extends AbstractHelper{
     private $dillerAPI;
 
     /**
-     * @var StoreUID
+     * @var String
      */
     private $store_uid;
 
@@ -70,6 +71,9 @@ class Data extends AbstractHelper{
 
     public function getStoreDepartments() {
         return $this->dillerAPI->Stores->getDepartments($this->store_uid);
+    }
+    public function getStoreCoupons() {
+        return $this->dillerAPI->Coupons->getStoreCoupons($this->store_uid);
     }
 
     public function getSelectedDepartment() {
