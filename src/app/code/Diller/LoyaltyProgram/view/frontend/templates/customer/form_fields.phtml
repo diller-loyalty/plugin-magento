@@ -22,12 +22,12 @@
             <span><?= $block->escapeHtml(__('Phone Number')) ?></span>
         </label>
         <div class="control">
-            <input type="hidden" name="loyalty_phone_countrycode" id="loyalty_phone_countrycode" value="<?= $member->getPhone()->getCountryCode() ?? '' ?>">
-            <input type="text" name="loyalty_phone_number" id="loyalty_phone_number" value="<?= $member->getPhone()->getNumber() ?? '' ?>" title="<?= $block->escapeHtmlAttr(__('Phone Number')) ?>" class="input-text">
+            <input type="hidden" name="loyalty_phone_countrycode" id="loyalty_phone_countrycode" value="<?= $is_member ? $member->getPhone()->getCountryCode() : '' ?>">
+            <input type="text" name="loyalty_phone_number" id="loyalty_phone_number" value="<?= $is_member ? $member->getPhone()->getNumber() : '' ?>" title="<?= $block->escapeHtmlAttr(__('Phone Number')) ?>" class="input-text">
         </div>
     </div>
 
-    <? if($block->getCustomer()){ ?>
+    <?php if($block->getCustomer()){ ?>
 
         <!-- Birthdate -->
         <div class="loyalty field date">
@@ -35,7 +35,7 @@
                 <span><?= $block->escapeHtml(__('Birthdate')) ?></span>
             </label>
             <div class="control flatpickr">
-                <input type="text" placeholder="Select Date... (dd-mm-yyyy)" data-input name="birth_date" id="birth_date" value="<?= ($member->getBirthDate() != null) ? date_format($member->getBirthDate(),"Y-m-d") : '' ?>" title="<?= $block->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
+                <input type="text" placeholder="Select Date... (dd-mm-yyyy)" data-input name="birth_date" id="birth_date" value="<?= $is_member ? (($member->getBirthDate() != null) ?? date_format($member->getBirthDate(),"Y-m-d")) : '' ?>" title="<?= $block->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
                 <a class="calendar-button" title="toggle" data-toggle></a>
             </div>
         </div>
@@ -69,7 +69,7 @@
                 <span><?= $block->escapeHtml(__('Address')) ?></span>
             </label>
             <div class="control">
-                <input type="text" name="address" id="address" value="<?= $member->getAddress()->getStreet() ?? ''  ?>" title="<?= $block->escapeHtmlAttr(__('Address')) ?>" class="input-text">
+                <input type="text" name="address" id="address" value="<?= $is_member ? $member->getAddress()->getStreet() : ''  ?>" title="<?= $block->escapeHtmlAttr(__('Address')) ?>" class="input-text">
             </div>
         </div>
 
@@ -79,7 +79,7 @@
                 <span><?= $block->escapeHtml(__('Zip Code')) ?></span>
             </label>
             <div class="control">
-                <input type="text" name="zip_code" id="zip_code" value="<?= $member->getAddress()->getZipCode() ?? ''  ?>" title="<?= $block->escapeHtmlAttr(__('Zip Code')) ?>" class="input-text">
+                <input type="text" name="zip_code" id="zip_code" value="<?= $is_member ? $member->getAddress()->getZipCode() : ''  ?>" title="<?= $block->escapeHtmlAttr(__('Zip Code')) ?>" class="input-text">
             </div>
         </div>
 
@@ -89,7 +89,7 @@
                 <span><?= $block->escapeHtml(__('City')) ?></span>
             </label>
             <div class="control">
-                <input type="text" name="city" id="city" value="<?= $member->getAddress()->getCity() ?? ''  ?>" title="<?= $block->escapeHtmlAttr(__('City')) ?>" class="input-text">
+                <input type="text" name="city" id="city" value="<?= $is_member ? $member->getAddress()->getCity() : ''  ?>" title="<?= $block->escapeHtmlAttr(__('City')) ?>" class="input-text">
             </div>
         </div>
 
@@ -355,7 +355,7 @@
     // Country select script
     require(['jquery','countryselect'],function($){
         $("input#country").countrySelect({
-            defaultCountry: "<?= !$is_member ? strtolower($member->getAddress()->getCountryCode() ?? 'no') : '' ?>",
+            defaultCountry: "<?= $is_member ? strtolower($member->getAddress()->getCountryCode() ?? 'no') : '' ?>",
             preferredCountries: ['no', 'us', 'ca', 'gb', 'se', 'dk', 'fi'],
             responsiveDropdown: true
         });

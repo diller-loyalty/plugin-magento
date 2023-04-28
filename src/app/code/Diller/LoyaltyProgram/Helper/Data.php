@@ -3,6 +3,7 @@
 namespace Diller\LoyaltyProgram\Helper;
 
 use DillerAPI\DillerAPI;
+use DillerAPI\ApiException;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Helper\AbstractHelper;
@@ -49,9 +50,16 @@ class Data extends AbstractHelper{
 
         $configs->setUserAgent("DillerLoyaltyPlugin/Magento v1.0.0");
 
-        $this->store_uid = $this->scopeConfig->getValue('dillerloyalty/settings/store_uid', ScopeInterface::SCOPE_STORE);
-        $this->dillerAPI = new \DillerAPI\DillerAPI($this->store_uid, $this->scopeConfig->getValue('dillerloyalty/settings/api_key', ScopeInterface::SCOPE_STORE));
+        $this->store_uid = $this->scopeConfig->getValue('dillerloyalty/settings/store_uid', ScopeInterface::SCOPE_STORE) ?? '';
 
+        if($this->store_uid){
+            $api_key = $this->scopeConfig->getValue('dillerloyalty/settings/api_key', ScopeInterface::SCOPE_STORE);
+            try {
+                $this->dillerAPI = new \DillerAPI\DillerAPI($this->store_uid, $api_key);
+            }
+            catch (ApiException $ex){
+            }
+        }
         parent::__construct($context);
     }
 
@@ -59,28 +67,63 @@ class Data extends AbstractHelper{
     // --------------------------------------> STORE
     // ------------------------------------------------------------------------------
     public function getLoyaltyDetails() {
-        return $this->dillerAPI->Stores->get($this->store_uid);
+        try {
+            return $this->dillerAPI->Stores->get($this->store_uid);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
     public function getStoreMembershipLevels() {
-        return $this->dillerAPI->MembershipLevel->getStoreMembershipLevel($this->store_uid);
+        try {
+            return $this->dillerAPI->MembershipLevel->getStoreMembershipLevel($this->store_uid);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
 
     public function getStoreSegments() {
-        return $this->dillerAPI->Stores->getSegments($this->store_uid);
+        try {
+            return $this->dillerAPI->Stores->getSegments($this->store_uid);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
 
     public function getStoreDepartments() {
-        return $this->dillerAPI->Stores->getDepartments($this->store_uid);
+        try {
+            return $this->dillerAPI->Stores->getDepartments($this->store_uid);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
     public function getStoreCoupons() {
-        return $this->dillerAPI->Coupons->getStoreCoupons($this->store_uid);
+        try {
+            return $this->dillerAPI->Coupons->getStoreCoupons($this->store_uid);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
 
     public function getSelectedDepartment() {
-        return $this->scopeConfig->getValue('dillerloyalty/settings/department', ScopeInterface::SCOPE_STORE);
+        try {
+            return $this->scopeConfig->getValue('dillerloyalty/settings/department', ScopeInterface::SCOPE_STORE);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
     public function getSelectedOrderStatus(){
-        return $this->scopeConfig->getValue('dillerloyalty/settings/transaction_status', ScopeInterface::SCOPE_STORE);
+        try {
+            return $this->scopeConfig->getValue('dillerloyalty/settings/transaction_status', ScopeInterface::SCOPE_STORE);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
 
 
@@ -96,21 +139,46 @@ class Data extends AbstractHelper{
         }
     }
     public function getMember($email = '', $phone = ''){
-        return $this->dillerAPI->Members->getMemberByFilter($this->store_uid, $email, $phone);
+        try {
+            return $this->dillerAPI->Members->getMemberByFilter($this->store_uid, $email, $phone);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
     public function getMemberCoupons($member_id){
-        return $this->dillerAPI->Coupons->getMemberCoupons($this->store_uid, $member_id);
+        try {
+            return $this->dillerAPI->Coupons->getMemberCoupons($this->store_uid, $member_id);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
 
     public function registerMember($data){
-        return $this->dillerAPI->Members->registerMember($this->store_uid, $data);
+        try {
+            return $this->dillerAPI->Members->registerMember($this->store_uid, $data);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
     public function updateMember($member_id, $data){
-        return $this->dillerAPI->Members->updateMember($this->store_uid, $member_id, $data);
+        try {
+            return $this->dillerAPI->Members->updateMember($this->store_uid, $member_id, $data);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
 
     public function createTransaction($member_id, $data){
-        return $this->dillerAPI->Transactions->createTransaction($this->store_uid, $member_id, $data);
+        try {
+            return $this->dillerAPI->Transactions->createTransaction($this->store_uid, $member_id, $data);
+        }
+        catch (Exception $ex){
+            return false;
+        }
     }
 
     // ----------------------------------------------------> Magento customer related methods

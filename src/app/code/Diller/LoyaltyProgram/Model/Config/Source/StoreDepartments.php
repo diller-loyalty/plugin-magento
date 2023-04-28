@@ -18,24 +18,23 @@ class StoreDepartments implements OptionSourceInterface{
     /**
      * @param Data $loyaltyHelper
      */
-    public function __construct(
-        Data $loyaltyHelper
-    ) {
+    public function __construct(Data $loyaltyHelper) {
         $this->loyaltyHelper = $loyaltyHelper;
     }
 
     /**
      * @inheritdoc
      */
-    public function toOptionArray(): array
-    {
+    public function toOptionArray(): array{
         $storeDepartments = $this->loyaltyHelper->getStoreDepartments();
         $result = [];
-        foreach ($storeDepartments as $department){
-            $result[] = array(
-                "value" => $department['id'],
-                "label" => $department['name']
-            );
+        if(is_array($storeDepartments)){
+            foreach ($storeDepartments as $department){
+                $result[] = array(
+                    "value" => $department['id'],
+                    "label" => $department['name']
+                );
+            }
         }
         return $result;
     }
