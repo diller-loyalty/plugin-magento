@@ -191,11 +191,12 @@ class Data extends AbstractHelper{
                 }
             }
 
-            $customer_phone_number = $this->getCustomerPhoneNumber($id);
-            $result = $this->getMember('', $customer_phone_number['country_code'].$customer_phone_number['national_number']);
-            if(!empty($result)){
-                return $result[0];
-            }
+            if($customer_phone_number = $this->getCustomerPhoneNumber($id)){
+                $result = $this->getMember('', $customer_phone_number['country_code'].$customer_phone_number['national_number']);
+                if(!empty($result)){
+                    return $result[0];
+                }
+            };
 
             // search member by customer email
             $result = $this->getMember($customer->getEmail());

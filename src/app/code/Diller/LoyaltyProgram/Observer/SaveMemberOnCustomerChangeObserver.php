@@ -72,7 +72,9 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
         $event = $observer->getEvent();
 
         // get customer object
-        $customer = $event->getData('customer_data_object');
+        if(!($customer = $event->getData('customer_data_object'))){
+            return true;
+        };
 
         // Get observer parameters
         $params = $this->request->getParams();
@@ -90,7 +92,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
         // Search member by phone number from Diller
         if(!$is_member && !empty($params['loyalty_phone_number'])){
             $phone = preg_replace("/[^0-9+]/", "", $params['loyalty_phone_number'] ?? "");
-            $country_code = strtoupper($params['country_code']) ?? "NO";
+            $country_code = array_key_exists('country_code', $params) ? strtoupper($params['country_code']) : "NO";
 
             // Check if phone is in international format
             if(preg_match("/^(\+|00)/", $phone)){
