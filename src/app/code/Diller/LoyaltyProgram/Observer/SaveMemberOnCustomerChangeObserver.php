@@ -5,6 +5,7 @@ namespace Diller\LoyaltyProgram\Observer;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Model\Customer;
 use Magento\Customer\Model\ResourceModel\CustomerFactory;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Diller\LoyaltyProgram\Helper\Data;
 use Magento\Framework\App\RequestInterface;
@@ -12,8 +13,8 @@ use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\State\InputMismatchException;
-
 use libphonenumber\PhoneNumberUtil;
+use Magento\Store\Model\ScopeInterface;
 
 class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
     /**
@@ -42,6 +43,11 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
     protected Data $loyaltyHelper;
 
     /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+
+    /**
      * @param RequestInterface $request
      * @param Customer $customer
      * @param CustomerFactory $customerFactory
@@ -53,13 +59,15 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
         Customer                    $customer,
         CustomerFactory             $customerFactory,
         CustomerRepositoryInterface $customerRepository,
-        Data                        $loyaltyHelper
+        Data                        $loyaltyHelper,
+        ScopeConfigInterface        $scopeConfig,
     ) {
         $this->request = $request;
         $this->customer = $customer;
         $this->customerFactory = $customerFactory;
         $this->customerRepository = $customerRepository;
         $this->loyaltyHelper = $loyaltyHelper;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -68,8 +76,9 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
      * @throws LocalizedException
      */
     public function execute(Observer $observer) {
-        $is_member = $valid_phone_number = $phone_country_code = $phone_national_number = false;
+        $valid_phone_number = $phone_country_code = $phone_national_number = false;
         $event = $observer->getEvent();
+        $country = $this->scopeConfig->getValue('general/country/default', ScopeInterface::SCOPE_WEBSITES);
 
         // get customer object
         if(!($customer = $event->getData('customer_data_object'))){
@@ -92,20 +101,14 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
         // Search member by phone number from Diller
         if(!$is_member && !empty($params['loyalty_phone_number'])){
             $phone = preg_replace("/[^0-9+]/", "", $params['loyalty_phone_number'] ?? "");
-            $country_code = array_key_exists('country_code', $params) ? strtoupper($params['country_code']) : "NO";
-
-            // Check if phone is in international format
-            if(preg_match("/^(\+|00)/", $phone)){
-                $country_code = "";
-                $phone = preg_replace("/^00/", "+", $phone);
-            }
+            $is_i18n_format = preg_match("/^(\+|00)/", $phone);
+            $phone_country_code = $params['loyalty_phone_countrycode'] ?? "+47";
+            $phone = $is_i18n_format ? preg_replace("/^00/", "+", $phone) : $phone_country_code.$phone;
 
             try {
-                if(($phone_number_proto = PhoneNumberUtil::getInstance()->parse($phone, $country_code)) && PhoneNumberUtil::getInstance()->isValidNumber($phone_number_proto)) {
-                    $phone_country_code = '+' . $phone_number_proto->getCountryCode();
+                if(($phone_number_proto = PhoneNumberUtil::getInstance()->parse($phone, '')) && PhoneNumberUtil::getInstance()->isValidNumber($phone_number_proto)) {
                     $phone_national_number = $phone_number_proto->getNationalNumber();
-                    $country_code = PhoneNumberUtil::getInstance()->getRegionCodeForNumber($phone_number_proto);
-
+                    $country = isset($params['country_code']) ? $country : PhoneNumberUtil::getInstance()->getRegionCodeForNumber($phone_number_proto);
                     $valid_phone_number = true;
 
                     // check if customer is a Diller member
@@ -115,7 +118,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                     }
                 }
             }
-            catch (Exception $ex){}
+            catch (\Exception $ex){}
         }
 
         // check loyalty consent
@@ -141,8 +144,8 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
             }
 
             $member_object = array(
-                "first_name" => $params['firstname'],
-                "last_name" => $params['lastname'],
+                "first_name" => trim($params['firstname']),
+                "last_name" => trim($params['lastname']),
                 "email" => $customer->getEmail(),
                 "phone" => array(
                     "country_code" => $phone_country_code,
@@ -158,33 +161,34 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                 "segments" => $member_segments
             );
 
-            if(array_key_exists('loyalty_consent_sms', $params)) $params["consent"]["receive_sms"] = $params['loyalty_consent_sms'] === 'on';
-            if(array_key_exists('loyalty_consent_email', $params)) $params["consent"]["receive_email"] = $params['loyalty_consent_email'] === 'on';
+            if(array_key_exists('loyalty_consent_sms', $params)) $member_object["consent"]["receive_sms"] = $params['loyalty_consent_sms'] === 'on';
+            if(array_key_exists('loyalty_consent_email', $params)) $member_object["consent"]["receive_email"] = $params['loyalty_consent_email'] === 'on';
+            if(array_key_exists('birth_date', $params)) $member_object['birth_date'] = date('Y-m-d', strtotime($params['birth_date']));
+            if(array_key_exists('gender', $params)) $member_object['gender'] = $params['gender'];
 
-            if($params['birth_date']) $member_object['birth_date'] = (string)date('Y-m-d', strtotime($params['birth_date']));
-            if($params['gender']) $member_object['gender'] = $params['gender'];
-            if($params['address']){
-                $member_object['address'] = array(
-                    "street" => $params['address'],
-                    "city" => $params['city'] ?? '',
-                    "zip_code" => isset($params['zip_code']) ? filter_var($params['zip_code'], FILTER_SANITIZE_NUMBER_INT) : '',
-                    "state" => $params['state'] ?? '',
-                    "country_code" => strtoupper($params['country_code']) ?? ''
-                );
-            }
+            $member_object['address'] = array(
+                "street"       => !empty($params['address']) ? $params['address'] : "",
+                "city"         => !empty($params['city']) ? $params['city'] : "",
+                "zip_code"     => !empty($params['zip_code']) ? $params['zip_code'] : "",
+                "state"        => !empty($params['state']) ? $params['state'] : "",
+                "country_code" => $country
+            );
 
             // register member in Diller
             if(!$is_member){
                 try {
                     $member = $this->loyaltyHelper->registerMember(json_encode($member_object));
-                } catch (\DillerAPI\ApiException $e){
+                }
+                catch (\DillerAPI\ApiException $e){
                     return false;
                 }
-            }else{
+            }
+            else{
                 // update member
                 try {
                     $member = $this->loyaltyHelper->updateMember($member['id'], json_encode($member_object));
-                } catch (\DillerAPI\ApiException $e){
+                }
+                catch (\DillerAPI\ApiException $e){
                     return false;
                 }
             }
@@ -198,6 +202,12 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
             $customer->updateData($customerData);
             $customerResource = $this->customerFactory->create();
             $customerResource->saveAttribute($customer, 'diller_member_id');
+
+//            TODO: Replace above code obsolete code with this simplified version, but remember that this will trigger "customer_save_after_data_object"
+//            in a loop, so we might need to move this observer into the frontend, rather globally
+//            $customer = $this->customerRepository->getById($customer->getID());
+//            $customer->setCustomAttribute('diller_member_id', (string)$member['id'] ?? '');
+//            $result = $this->customerRepository->save($customer);
         }
 
         return true;
