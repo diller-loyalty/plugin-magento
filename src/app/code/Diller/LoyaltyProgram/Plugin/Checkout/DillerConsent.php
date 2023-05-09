@@ -19,8 +19,10 @@ class DillerConsent implements LayoutProcessorInterface{
         $loyaltyDetails = $this->_loyaltyHelper->getLoyaltyDetails();
         $is_member = false;
 
-        if($customer_id = $_SESSION['customer_base']['customer_id']){
-            $is_member = ($member = $this->_loyaltyHelper->searchMemberByCustomerId($customer_id));
+        if(array_key_exists('customer_base', $_SESSION)){
+            if(array_key_exists('customer_id', $_SESSION['customer_base'])){
+                $is_member = ($member = $this->_loyaltyHelper->searchMemberByCustomerId($_SESSION['customer_base']['customer_id']));
+            }
         }
 
         $attributeCode = 'diller_consent';

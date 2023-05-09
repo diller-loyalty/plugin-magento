@@ -22,8 +22,8 @@
             <span><?= $block->escapeHtml(__('Phone Number')) ?></span>
         </label>
         <div class="control">
-            <input type="hidden" name="loyalty_phone_countrycode" id="loyalty_phone_countrycode" value="<?= $is_member ? $member->getPhone()->getCountryCode() : '' ?>">
-            <input type="text" name="loyalty_phone_number" id="loyalty_phone_number" value="<?= $is_member ? $member->getPhone()->getNumber() : '' ?>" title="<?= $block->escapeHtmlAttr(__('Phone Number')) ?>" class="input-text">
+            <input <?= $is_member ? 'disabled' : '' ?> type="hidden" name="loyalty_phone_countrycode" id="loyalty_phone_countrycode" value="<?= $is_member ? $member->getPhone()->getCountryCode() : '' ?>">
+            <input <?= $is_member ? 'disabled' : '' ?> type="text" name="loyalty_phone_number" id="loyalty_phone_number" value="<?= $is_member ? $member->getPhone()->getNumber() : '' ?>" title="<?= $block->escapeHtmlAttr(__('Phone Number')) ?>" class="input-text">
         </div>
     </div>
 

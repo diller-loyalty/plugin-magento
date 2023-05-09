@@ -1,18 +1,29 @@
 <?php
-    /** @var Member $block */
-    use Diller\LoyaltyProgram\Block\Frontend\Member;
+/** @var Member $block */
+use Diller\LoyaltyProgram\Block\Frontend\Member;
 
-    $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
+$loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 
-    // member details
-    $is_member = false;
-    if($customer = $block->getCustomer()){
-        $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
-        if($is_member) $coupons = $block->getMemberCoupons($member['id']);
+// member details
+$is_member = false;
+if($customer = $block->getCustomer()){
+    $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
+    if($is_member) $coupons = $block->getMemberCoupons($member['id']);
+    $gender = $member->getGender();
+    switch ($member->getGender()) {
+        case "NotShared":
+            $gender = "Don't want to share";
+            break;
+        case "NonBinary":
+            $gender = "Non binary";
+            break;
+        default:
+            $gender = $member->getGender();
     }
+}
 
-    // store details
-    $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
+// store details
+$loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 ?>
 
 <?php if(!$is_member) { ?>
@@ -28,7 +39,7 @@
                 <li><strong>Name</strong> <?= $member->getFirstName() ?> <?= $member->getLastName() ?></li>
                 <li><strong>Phone number</strong> <?= $member->getPhone()->getCountryCode() ?> <?= $member->getPhone()->getNumber() ?></li>
                 <li><strong>Email</strong> <?= $member->getEmail() ?></li>
-                <li><strong>Gender</strong> <?= $member->getGender() ?></li>
+                <li><strong>Gender</strong> <?= $gender ?? '' ?></li>
                 <li><strong>Address</strong> <?= $member->getAddress()->getStreet() ?><br><?= $member->getAddress()->getZipCode() ?> <?= $member->getAddress()->getCity() ?> - <?= $member->getAddress()->getCountryCode() ?>
                 </li>
                 <li><strong>Birthdate</strong> <?= ($member->getBirthDate() != null) ? date_format($member->getBirthDate(),"d-m-Y") : 'N/A' ?></li>
