@@ -49,12 +49,18 @@ class Member extends Template {
     private LoyaltyDetails $loyaltyDetails;
 
     /**
+     * @var \Magento\Checkout\Model\Session
+     */
+    private \Magento\Checkout\Model\Session $checkoutSession;
+
+    /**
      * Constructor
      *
      * @param Context $context
      * @param CurrentCustomer $currentCustomer
      * @param View $viewHelper
      * @param Data $loyaltyHelper
+     * @param \Magento\Checkout\Model\Session $checkoutSession
      * @param array $data
      */
     public function __construct(
@@ -62,11 +68,13 @@ class Member extends Template {
         CurrentCustomer $currentCustomer,
         View $viewHelper,
         Data $loyaltyHelper,
+        \Magento\Checkout\Model\Session $checkoutSession,
         array $data = []
     ) {
         $this->currentCustomer = $currentCustomer;
         $this->_viewHelper = $viewHelper;
         $this->_loyaltyHelper = $loyaltyHelper;
+        $this->checkoutSession = $checkoutSession;
 
         parent::__construct($context, $data);
     }
@@ -109,5 +117,9 @@ class Member extends Template {
 
     public function getMemberCoupons($id){
         return $this->_loyaltyHelper->getMemberCoupons($id);
+    }
+
+    public function getCheckoutSession(){
+        return $this->checkoutSession;
     }
 }

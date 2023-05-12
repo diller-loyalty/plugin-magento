@@ -1,31 +1,33 @@
 <?php
-/** @var Member $block */
-use Diller\LoyaltyProgram\Block\Frontend\Member;
+    /** @var Member $block */
+    use Diller\LoyaltyProgram\Block\Frontend\Member;
 
-$loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
+    $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 
-// member details
-$is_member = false;
-if($customer = $block->getCustomer()){
-    $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
-    if($is_member) $coupons = $block->getMemberCoupons($member['id']);
-}
+    // member details
+    $is_member = false;
+    if($customer = $block->getCustomer()){
+        $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
+        if($is_member) $coupons = $block->getMemberCoupons($member['id']);
+    }
 
-// store details
-$loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
+    // store details
+    $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
+
+    // apply price rule to checkout
+    if(array_key_exists("loyaltyProgramPriceRule", $_COOKIE)){
+        $block->getCheckoutSession()->getQuote()->setAppliedRuleIds($_COOKIE['loyaltyProgramPriceRule']);
+        setcookie("loyaltyProgramPriceRule", "", time() - 3600);
+    }
+    //TODO: automatically apply price rule if a product specific coupon exists and that same product is presented in the cart
 ?>
 <?php if($is_member && $loyaltyDetails['pointsSystem']['enabled']) { ?>
-    <div class="diller-container coupons">
-        <h3 class="page-title">
-            <span class="base" data-ui-id="page-title-wrapper"><b><?= $loyaltyDetails['storeName'] ?></b> discount codes</span>
-        </h3>
-        <hr>
-        <div class="diller-coupon-container">
-            <?php
-            foreach ($coupons as $coupon) {
+    <div class="diller-coupon-container">
+        <?php foreach ($coupons as $coupon) {
+            $external_ids = $coupon->getExternalIds();
+            if(!empty($external_ids)){
                 $usages_left = $coupon['maxRedemptions'] - $coupon['timesRedeemed'];
-                $now = new DateTime();
-                ?>
+                $now = new DateTime(); ?>
                 <div class="diller-coupon">
                     <div class="diller-coupon-inner">
                         <div class="diller-coupon-img" style="background-image: url('<?= $coupon['imageUrl'] ?>')"></div>
@@ -40,34 +42,48 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
                             </span>
                         </div>
                         <div class="diller-coupon-usage">
-                            You have <b><?=$usages_left ?></b> <?= $usages_left > 1 ? 'usages' : 'usage' ?> left
+                            <b><?=$usages_left ?></b> <?= $usages_left > 1 ? 'usages' : 'usage' ?> left
                         </div>
                     </div>
                     <div class="diller-coupon-inner-bottom">
-                        <button id="apply_coupon" data-coupon-id="<?= $coupon['externalId'] ?>">Apply coupon</button>
+                        <button id="apply_coupon" onclick="applyCoupon(<?= $external_ids[0]["externalId"] ?>)" <?= !empty($block->getCheckoutSession()->getQuote()['items']) ? '' : 'disabled' ?>>Apply coupon</button>
+                        <?php if(empty($block->getCheckoutSession()->getQuote()['items'])){ ?>
+                            <span">Add products to cart in order to apply coupons</span>
+                        <?php } ?>
                     </div>
                 </div>
-            <?php } ?>
-        </div>
+            <?php }
+        } ?>
     </div>
+
+    <script>
+        function applyCoupon(price_rule_id) {
+            setCookie('loyaltyProgramPriceRule', price_rule_id);
+        }
+
+        function setCookie(name, value) {
+            let date = new Date();
+            date.setTime(date.getTime() + (2*24*60*60*1000));
+            let expires = "; expires=" + date.toUTCString();
+            document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+        }
+    </script>
 
 
     <style>
-        .cart-discount .diller-container.coupons{
-            float:left;
-            width: 100%;
-        }
         .diller-coupon {
             line-height: normal;
-            background-color: #f5f5f5;
+            background-color: #f7f7f7;
         }
 
         .diller-coupon-container {
+            padding-bottom: 15px;
             margin-bottom: 30px;
             overflow-x: auto;
             display: flex;
-            gap: 4%;
-            flex-wrap: wrap;
+            flex-direction: row;
+            gap: 2%;
+            padding-bottom: 0;
         }
 
         .diller-coupon-container::-webkit-scrollbar {
@@ -80,10 +96,10 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
         }
 
         .diller-coupon-container .diller-coupon {
-            flex: 0 0 22%;
+            flex: 0 0 20%;
             text-align: center;
-            margin-bottom: 35px;
-            background-color: #ebebeb;
+            margin-bottom: 15px;
+            background-color: #f5f5f5;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -101,7 +117,7 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
             bottom: 0;
             left: 0;
             opacity: 0.75;
-            background-color: #ebebeb;
+            background-color: #f5f5f5;
         }
 
         .diller-coupon-container .diller-coupon--grayout .diller-button {
@@ -115,6 +131,13 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 
         .diller-coupon-inner-bottom {
             padding: 20px;
+        }
+        .diller-coupon-inner-bottom span {
+            font-size: 12px;
+            margin: 10px 0 5px;
+            float: left;
+            width: 100%;
+            opacity: 0.7;
         }
 
         .diller-coupon-name {

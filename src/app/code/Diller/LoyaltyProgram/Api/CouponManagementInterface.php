@@ -1,14 +1,12 @@
 <?php
-namespace Diller\LoyaltyProgram\Api;
+    namespace Diller\LoyaltyProgram\Api;
 
-interface CouponManagementInterface {
-
-    /**
-     * POST for coupons creation/update
-     * @param int $coupon_id
-     * @param boolean $all_coupons
-     * @return string
-     */
-
-    public function setCoupon($coupon_id = false, $all_coupons = false);
+    interface CouponManagementInterface {
+        /**
+         * POST for coupon creation/update
+         * @param int $price_rule_id
+         * @param mixed $price_rule_data
+         * @return int|boolean
+         */
+        public function setCoupon($price_rule_id, $price_rule_data);
 }

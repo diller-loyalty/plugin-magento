@@ -15,23 +15,34 @@ if($customer = $block->getCustomer()){
 $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 ?>
 
-<?php if ($is_member && $loyaltyDetails['pointsSystem']['enabled']) : ?>
-    <div class="loyalty-points">
-        <p onclick="toLoyaltyProgramPage()" data-bind="text: new String('<?= $escaper->escapeHtml(__('You have %1 loyalty points!', '%1')) ?>').replace('%1', <?= $member['membershipDetail']['points'] ?>)">
-        </p>
-    </div>
-    <script>
-        function toLoyaltyProgramPage(){
-            window.location.replace("/loyaltyprogram/customer/index/");
-        }
-    </script>
-    <style>
-        .panel.header .loyalty-points {
-            display: inline-block;
-            margin-left: 15px;
-            margin-right: 0;
-            cursor: pointer;
-            float: right;
-        }
-    </style>
-<?php endif ?>
+<div class="loyalty-points">
+    <?php if($is_member){
+        if ($loyaltyDetails['pointsSystem']['enabled']) { ?>
+            <p onclick="toLoyaltyProgramPage()" data-bind="text: new String('<?= $escaper->escapeHtml(__('You have %1 loyalty points!', '%1')) ?>').replace('%1', <?= $member['membershipDetail']['points'] ?>)"></p>
+        <?php } else { ?>
+            <p onclick="toLoyaltyProgramPage()"><?= $loyaltyDetails->getStoreName() ?></p>
+        <?php } ?>
+    <?php } else { ?>
+        <p onclick="<?= empty($customer) ? 'toRegistrationPage()' : 'toUpdateAccountPage()'?>">Join our Loyalty Program!</p>
+    <?php } ?>
+</div>
+<script>
+    function toLoyaltyProgramPage(){
+        window.location.replace("/loyaltyprogram/customer/index/");
+    }
+    function toRegistrationPage(){
+        window.location.replace("/customer/account/create/");
+    }
+    function toUpdateAccountPage(){
+        window.location.replace("/customer/account/create/");
+    }
+</script>
+<style>
+    .panel.header .loyalty-points {
+        display: inline-block;
+        margin-left: 15px;
+        margin-right: 0;
+        cursor: pointer;
+        float: right;
+    }
+</style>
