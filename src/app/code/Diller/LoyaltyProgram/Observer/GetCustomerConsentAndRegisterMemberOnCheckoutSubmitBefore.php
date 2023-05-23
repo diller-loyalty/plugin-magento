@@ -109,7 +109,7 @@
                         );
                     }
                     if($member = $this->loyaltyHelper->registerMember($member_object)){
-                        $order->setData('diller_member_id', $member['id']);
+                        $order->setData('diller_member_id', $member->getId());
                         $is_member = true;
                         if($customer_id = $order->getCustomerId()){
                             if($customer = $this->customer->load($customer_id)){
@@ -124,8 +124,16 @@
                 }
 
                 // reserve coupon / stamp card
-                if($is_member && ($coupon = $order->getCoupon())){
-
+                if($is_member && ($order_coupons = $order->getCouponCode())){
+                    if(!empty($order_coupons)){
+                        foreach ($order_coupons as $coupon){
+                            if($result = $this->loyaltyHelper->validateMemberCoupon($member->getId(), $coupon)){
+                                if($result->getIsOk()){
+                                    $this->loyaltyHelper->reserveMemberCoupon($member->getId(), $coupon, $order->getId());
+                                }
+                            }
+                        }
+                    }
                 }
             }
             return true;

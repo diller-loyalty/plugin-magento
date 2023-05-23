@@ -20,35 +20,7 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
             <span class="base" data-ui-id="page-title-wrapper"><b><?= $loyaltyDetails['storeName'] ?></b> discount codes</span>
         </h3>
         <hr>
-        <div class="diller-coupon-container">
-            <?php
-            foreach ($coupons as $coupon) {
-                $usages_left = $coupon['maxRedemptions'] - $coupon['timesRedeemed'];
-                $now = new DateTime();
-                ?>
-                <div class="diller-coupon">
-                    <div class="diller-coupon-inner">
-                        <div class="diller-coupon-img" style="background-image: url('<?= $coupon['imageUrl'] ?>')"></div>
-                        <h3 class="diller-coupon-name"><?= $coupon['title'] ?></h3>
-                        <div class="diller-coupon-discount diller-flex-col">
-                            <span><?= $coupon['description'] ?></span>
-                            <span>
-                                <b>
-                                    <?= $coupon['discountValue'] ?>
-                                    <?= ($coupon['discountType'] === 'Percentage') ? '%' : $loyaltyDetails['currency']?>
-                                </b>
-                            </span>
-                        </div>
-                        <div class="diller-coupon-usage">
-                            You have <b><?=$usages_left ?></b> <?= $usages_left > 1 ? 'usages' : 'usage' ?> left
-                        </div>
-                    </div>
-                    <div class="diller-coupon-inner-bottom">
-                        <button id="apply_coupon" data-coupon-id="<?= $coupon['externalId'] ?>">Apply coupon</button>
-                    </div>
-                </div>
-            <?php } ?>
-        </div>
+        <?php echo $this->getLayout()->createBlock("Diller\LoyaltyProgram\Block\Frontend\Member")->setTemplate("Diller_LoyaltyProgram::coupons.phtml")->toHtml() ?>
     </div>
 
 

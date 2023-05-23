@@ -1,19 +1,19 @@
 <?php
-    use Diller\LoyaltyProgram\Block\Frontend\Member;
-    /** @var Member $block */
+use Diller\LoyaltyProgram\Block\Frontend\Member;
+/** @var Member $block */
 
-    $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
+$loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 
-    // member details
-    $is_member = false;
-    if($customer = $block->getCustomer()){
-        $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
-    }
+// member details
+$is_member = false;
+if($customer = $block->getCustomer()){
+    $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
+}
 
-    // store details
-    $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
-    $storeSegments = $loyaltyHelper->getStoreSegments();
-    $storeDepartments = $loyaltyHelper->getStoreDepartments();
+// store details
+$loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
+$storeSegments = $loyaltyHelper->getStoreSegments();
+$storeDepartments = $loyaltyHelper->getStoreDepartments();
 ?>
 <fieldset class="fieldset account <?= $is_member ? ('update member_' . $member->getId()) : 'create' ?>">
     <legend class="legend"><span><?= $loyaltyDetails['storeName'] ?></span></legend><br>
@@ -27,178 +27,175 @@
         </div>
     </div>
 
-    <?php if($block->getCustomer()){ ?>
-
-        <!-- Birthdate -->
-        <div class="loyalty field date">
-            <label class="label" for="birthdate">
-                <span><?= $block->escapeHtml(__('Birthdate')) ?></span>
-            </label>
-            <div class="control flatpickr">
-                <input type="text" placeholder="Select Date... (dd-mm-yyyy)" data-input name="birth_date" id="birth_date" value="<?= $is_member ? (($member->getBirthDate() != null) ?? date_format($member->getBirthDate(),"Y-m-d")) : '' ?>" title="<?= $block->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
-                <a class="calendar-button" title="toggle" data-toggle></a>
-            </div>
+    <!-- Birthdate -->
+    <div class="loyalty field date">
+        <label class="label" for="birthdate">
+            <span><?= $block->escapeHtml(__('Birthdate')) ?></span>
+        </label>
+        <div class="control flatpickr">
+            <input type="text" placeholder="Select Date... (dd-mm-yyyy)" data-input name="birth_date" id="birth_date" value="<?= $is_member ? (($member->getBirthDate() != null) ?? date_format($member->getBirthDate(),"Y-m-d")) : '' ?>" title="<?= $block->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
+            <a class="calendar-button" title="toggle" data-toggle></a>
         </div>
+    </div>
 
-        <!-- Gender -->
-        <?php
-            $genders = array(
-                array("id" => 1, "name" => "Male"),
-                array("id" => 2, "name" => "Female"),
-                array("id" => 4, "name" => "Non-binary"),
-                array("id" => 3, "name" => "Don't want to share"),
-            )
-        ?>
-        <div class="loyalty options field">
-            <label class="label" for="gender">
-                <span><?= $block->escapeHtml(__('Gender')) ?></span>
-            </label>
-            <div class="control">
-                <?php foreach($genders as $gender ){?>
-                    <div class="option">
-                        <input type="radio" name="gender" id="<?= $gender['id'] ?>" value="<?= $gender['name'] ?>" title="<?= $gender['name'] ?>" class="input-radio" <?= $is_member ? (($member->getGender() === $gender['name']) ? 'checked' : '') : '' ?>>
-                        <label for="<?= $gender['id'] ?>"><?= $gender['name'] ?></label>
-                    </div>
-                <?php } ?>
-            </div>
-        </div>
-
-        <!-- Address -->
-        <div class="loyalty field">
-            <label class="label" for="address">
-                <span><?= $block->escapeHtml(__('Address')) ?></span>
-            </label>
-            <div class="control">
-                <input type="text" name="address" id="address" value="<?= $is_member ? $member->getAddress()->getStreet() : ''  ?>" title="<?= $block->escapeHtmlAttr(__('Address')) ?>" class="input-text">
-            </div>
-        </div>
-
-        <!-- ZIPCODE -->
-        <div class="loyalty field">
-            <label class="label" for="zip_code">
-                <span><?= $block->escapeHtml(__('Zip Code')) ?></span>
-            </label>
-            <div class="control">
-                <input type="text" name="zip_code" id="zip_code" value="<?= $is_member ? $member->getAddress()->getZipCode() : ''  ?>" title="<?= $block->escapeHtmlAttr(__('Zip Code')) ?>" class="input-text">
-            </div>
-        </div>
-
-        <!-- CITY -->
-        <div class="loyalty field">
-            <label class="label" for="city">
-                <span><?= $block->escapeHtml(__('City')) ?></span>
-            </label>
-            <div class="control">
-                <input type="text" name="city" id="city" value="<?= $is_member ? $member->getAddress()->getCity() : ''  ?>" title="<?= $block->escapeHtmlAttr(__('City')) ?>" class="input-text">
-            </div>
-        </div>
-
-        <!-- COUNTRY -->
-        <div class="loyalty field">
-            <label class="label" for="country">
-                <span><?= $block->escapeHtml(__('Country')) ?></span>
-            </label>
-            <div class="control">
-                <input type="hidden" name="country_code" id="country_code" />
-                <input type="text" name="country" id="country" />
-            </div>
-        </div>
-
-        <!-- SEGMENTS -->
-        <?php foreach($storeSegments as $segment ){
-            if ($segment['isVisibleToFollower']) {
-
-                $memberResponse = ['value' => '', 'selectedOptions' => []];
-                if($is_member){
-                    foreach($member['segments'] as $segmentResponse){
-                        if($segmentResponse['id'] == $segment['id']){
-                            $memberResponse = $segmentResponse;
-                            continue;
-                        }
-                    }
-                }
-                switch($segment['type']){
-                    case ('DateTime'):
-                        $segment_type = "date";
-                        break;
-                    case ('Dropdown'):
-                        $segment_type = "select";
-                        break;
-                    case ('Radio'):
-                        $segment_type = "radio";
-                        break;
-                    case ('Checkbox'):
-                        $segment_type = "checkbox";
-                        break;
-                    default:
-                        $segment_type = "text";
-                } ?>
-                <div class="loyalty <?= ($segment_type === 'radio' || $segment_type === 'checkbox') ? 'options' : ''?> field">
-                    <label class="label" for="segment_<?= $segment['id'] ?>">
-                        <span><?= $segment['text'] ?></span>
-                    </label>
-                    <div class="control">
-                        <?php if($segment_type === "select"){ ?>
-                            <select name="segment_<?= $segment['id'] ?>" id="segment_<?= $segment['id'] ?>">
-                                <option value="">...</option>
-                                <?php foreach($segment['options'] as $option ){ ?>
-                                    <option value="<?= $option['id'] ?>" <?= ($memberResponse['value'] == $option['id']) ? 'selected' : '' ?>><?= $option['text'] ?></option>
-                                <?php } ?>
-                            </select>
-                        <?php }elseif($segment_type === "checkbox" || $segment_type === "radio"){
-                            foreach($segment['options'] as $option ){ ?>
-                                <div class="option">
-                                    <input
-                                        type="<?= $segment_type ?>"
-                                        name="<?= ($segment_type === "checkbox") ? "segment_" . $segment['id']."[]" : "segment_" . $segment['id'] ?>"
-                                        id="<?= $option['id'] ?>"
-                                        value="<?= $option['id'] ?>"
-                                        title="<?= $option['text'] ?>"
-                                        class="input-<?= $segment_type ?>"
-                                        <?php if((
-                                                $segment_type === 'radio' &&
-                                                $memberResponse['value'] == $option['id']
-                                            ) || (
-                                                $segment_type === 'checkbox' &&
-                                                in_array($option['id'], $memberResponse['selectedOptions'])
-                                            )){
-                                                echo 'checked';
-                                        } ?>
-                                    >
-                                    <label for="<?= $option['id'] ?>"><?= $option['text'] ?></label>
-                                </div>
-                            <?php }
-                        }elseif($segment_type === "date"){ ?>
-                            <div class="control flatpickr">
-                                <input type="text" placeholder="Select <?= $segment['text'] ?>... (dd-mm-yyyy)" data-input name="segment_<?= $segment['id'] ?>" id="segment_<?= $segment['id'] ?>" value="<?= $memberResponse['value'] ? date("Y-m-d", strtotime($memberResponse['value'])) : '' ?>" title="<?= $segment['id'] ?>" class="input-date">
-                                <a class="calendar-button" title="toggle" data-toggle></a>
-                            </div>
-                        <?php }else{ ?>
-                            <div class="control">
-                                <input type="<?= $segment_type ?>" name="segment_<?= $segment['id'] ?>" id="segment_<?= $segment['id'] ?>" value="<?= $memberResponse['value'] ?? '' ?>" title="<?= $segment['id'] ?>" class="input-<?= $segment_type ?>">
-                            </div>
-                        <?php } ?>
-                    </div>
+    <!-- Gender -->
+    <?php
+    $genders = array(
+        array("id" => 1, "name" => "Male"),
+        array("id" => 2, "name" => "Female"),
+        array("id" => 4, "name" => "Non-binary"),
+        array("id" => 3, "name" => "Don't want to share"),
+    )
+    ?>
+    <div class="loyalty options field">
+        <label class="label" for="gender">
+            <span><?= $block->escapeHtml(__('Gender')) ?></span>
+        </label>
+        <div class="control">
+            <?php foreach($genders as $gender ){?>
+                <div class="option">
+                    <input type="radio" name="gender" id="<?= $gender['id'] ?>" value="<?= $gender['name'] ?>" title="<?= $gender['name'] ?>" class="input-radio" <?= $is_member ? (($member->getGender() === $gender['name']) ? 'checked' : '') : '' ?>>
+                    <label for="<?= $gender['id'] ?>"><?= $gender['name'] ?></label>
                 </div>
             <?php } ?>
-        <?php } ?>
+        </div>
+    </div>
 
-        <!-- DEPARTMENTS -->
-        <?php if (!empty($storeDepartments)) { ?>
-            <div class="loyalty options field">
-                <label class="label">
-                    <span>Department</span>
+    <!-- Address -->
+    <div class="loyalty field">
+        <label class="label" for="address">
+            <span><?= $block->escapeHtml(__('Address')) ?></span>
+        </label>
+        <div class="control">
+            <input type="text" name="address" id="address" value="<?= $is_member ? $member->getAddress()->getStreet() : ''  ?>" title="<?= $block->escapeHtmlAttr(__('Address')) ?>" class="input-text">
+        </div>
+    </div>
+
+    <!-- ZIPCODE -->
+    <div class="loyalty field">
+        <label class="label" for="zip_code">
+            <span><?= $block->escapeHtml(__('Zip Code')) ?></span>
+        </label>
+        <div class="control">
+            <input type="text" name="zip_code" id="zip_code" value="<?= $is_member ? $member->getAddress()->getZipCode() : ''  ?>" title="<?= $block->escapeHtmlAttr(__('Zip Code')) ?>" class="input-text">
+        </div>
+    </div>
+
+    <!-- CITY -->
+    <div class="loyalty field">
+        <label class="label" for="city">
+            <span><?= $block->escapeHtml(__('City')) ?></span>
+        </label>
+        <div class="control">
+            <input type="text" name="city" id="city" value="<?= $is_member ? $member->getAddress()->getCity() : ''  ?>" title="<?= $block->escapeHtmlAttr(__('City')) ?>" class="input-text">
+        </div>
+    </div>
+
+    <!-- COUNTRY -->
+    <div class="loyalty field">
+        <label class="label" for="country">
+            <span><?= $block->escapeHtml(__('Country')) ?></span>
+        </label>
+        <div class="control">
+            <input type="hidden" name="country_code" id="country_code" />
+            <input type="text" name="country" id="country" />
+        </div>
+    </div>
+
+    <!-- SEGMENTS -->
+    <?php foreach($storeSegments as $segment ){
+        if ($segment['isVisibleToFollower']) {
+
+            $memberResponse = ['value' => '', 'selectedOptions' => []];
+            if($is_member){
+                foreach($member['segments'] as $segmentResponse){
+                    if($segmentResponse['id'] == $segment['id']){
+                        $memberResponse = $segmentResponse;
+                        continue;
+                    }
+                }
+            }
+            switch($segment['type']){
+                case ('DateTime'):
+                    $segment_type = "date";
+                    break;
+                case ('Dropdown'):
+                    $segment_type = "select";
+                    break;
+                case ('Radio'):
+                    $segment_type = "radio";
+                    break;
+                case ('Checkbox'):
+                    $segment_type = "checkbox";
+                    break;
+                default:
+                    $segment_type = "text";
+            } ?>
+            <div class="loyalty <?= ($segment_type === 'radio' || $segment_type === 'checkbox') ? 'options' : ''?> field">
+                <label class="label" for="segment_<?= $segment['id'] ?>">
+                    <span><?= $segment['text'] ?></span>
                 </label>
                 <div class="control">
-                    <?php foreach($storeDepartments as $option ){?>
-                        <div class="option">
-                            <input type="checkbox" name="department[]" id="<?= $option['id'] ?>" value="<?= $option['id'] ?>" title="<?= $option['name'] ?>" class="input-checkbox" <?= $is_member ? (in_array($option['id'], $member['departmentIds']) ? 'checked' : '') : '' ?>>
-                            <label for="<?= $option['id'] ?>"><?= $option['name'] ?></label>
+                    <?php if($segment_type === "select"){ ?>
+                        <select name="segment_<?= $segment['id'] ?>" id="segment_<?= $segment['id'] ?>">
+                            <option value="">...</option>
+                            <?php foreach($segment['options'] as $option ){ ?>
+                                <option value="<?= $option['id'] ?>" <?= ($memberResponse['value'] == $option['id']) ? 'selected' : '' ?>><?= $option['text'] ?></option>
+                            <?php } ?>
+                        </select>
+                    <?php }elseif($segment_type === "checkbox" || $segment_type === "radio"){
+                        foreach($segment['options'] as $option ){ ?>
+                            <div class="option">
+                                <input
+                                    type="<?= $segment_type ?>"
+                                    name="<?= ($segment_type === "checkbox") ? "segment_" . $segment['id']."[]" : "segment_" . $segment['id'] ?>"
+                                    id="<?= $option['id'] ?>"
+                                    value="<?= $option['id'] ?>"
+                                    title="<?= $option['text'] ?>"
+                                    class="input-<?= $segment_type ?>"
+                                    <?php if((
+                                            $segment_type === 'radio' &&
+                                            $memberResponse['value'] == $option['id']
+                                        ) || (
+                                            $segment_type === 'checkbox' &&
+                                            in_array($option['id'], $memberResponse['selectedOptions'])
+                                        )){
+                                        echo 'checked';
+                                    } ?>
+                                >
+                                <label for="<?= $option['id'] ?>"><?= $option['text'] ?></label>
+                            </div>
+                        <?php }
+                    }elseif($segment_type === "date"){ ?>
+                        <div class="control flatpickr">
+                            <input type="text" placeholder="Select <?= $segment['text'] ?>... (dd-mm-yyyy)" data-input name="segment_<?= $segment['id'] ?>" id="segment_<?= $segment['id'] ?>" value="<?= $memberResponse['value'] ? date("Y-m-d", strtotime($memberResponse['value'])) : '' ?>" title="<?= $segment['id'] ?>" class="input-date">
+                            <a class="calendar-button" title="toggle" data-toggle></a>
+                        </div>
+                    <?php }else{ ?>
+                        <div class="control">
+                            <input type="<?= $segment_type ?>" name="segment_<?= $segment['id'] ?>" id="segment_<?= $segment['id'] ?>" value="<?= $memberResponse['value'] ?? '' ?>" title="<?= $segment['id'] ?>" class="input-<?= $segment_type ?>">
                         </div>
                     <?php } ?>
                 </div>
             </div>
         <?php } ?>
+    <?php } ?>
+
+    <!-- DEPARTMENTS -->
+    <?php if (!empty($storeDepartments)) { ?>
+        <div class="loyalty options field">
+            <label class="label">
+                <span>Department</span>
+            </label>
+            <div class="control">
+                <?php foreach($storeDepartments as $option ){?>
+                    <div class="option">
+                        <input type="checkbox" name="department[]" id="<?= $option['id'] ?>" value="<?= $option['id'] ?>" title="<?= $option['name'] ?>" class="input-checkbox" <?= $is_member ? (in_array($option['id'], $member['departmentIds']) ? 'checked' : '') : '' ?>>
+                        <label for="<?= $option['id'] ?>"><?= $option['name'] ?></label>
+                    </div>
+                <?php } ?>
+            </div>
+        </div>
     <?php } ?>
 
     <div class="loyalty options field">
@@ -228,13 +225,13 @@
                     <span> I want to get offers and benefits that suit me based on my preferences and purchase history.</span>
                 </label>
             </div>
-        <?php if ($is_member){ ?>
+            <?php if ($is_member){ ?>
                 <div class="option">
                     <input type="checkbox"
                            name="loyalty_consent_sms"
                            id="loyalty_consent_sms"
                            class="checkbox"
-                           <?= $member->getConsent()->getReceiveSms() ? 'checked' : '' ?>
+                        <?= $member->getConsent()->getReceiveSms() ? 'checked' : '' ?>
                     >
                     <label for="loyalty_consent_sms" class="label">
                         <span>SMS: I want to receive benefits, offers and other marketing electronically in connection with the customer club via SMS.</span>
@@ -245,13 +242,13 @@
                            name="loyalty_consent_email"
                            id="loyalty_consent_email"
                            class="checkbox"
-                            <?= $member->getConsent()->getReceiveEmail() ? 'checked' : '' ?>
+                        <?= $member->getConsent()->getReceiveEmail() ? 'checked' : '' ?>
                     >
                     <label for="loyalty_consent_email" class="label">
                         <span>E-mail: I want to receive benefits, offers and other marketing electronically in connection with the customer club by E-mail.</span>
                     </label>
                 </div>
-        <?php } ?>
+            <?php } ?>
         </div>
     </div>
 </fieldset>

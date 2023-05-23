@@ -1,25 +1,20 @@
 <?php
-    /** @var Member $block */
-    use Diller\LoyaltyProgram\Block\Frontend\Member;
+/** @var Member $block */
+use Diller\LoyaltyProgram\Block\Frontend\Member;
 
-    $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
+$loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 
-    // member details
-    $is_member = false;
-    if($customer = $block->getCustomer()){
-        $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
-        if($is_member) $coupons = $block->getMemberCoupons($member['id']);
-    }
+// member details
+$is_member = false;
+if($customer = $block->getCustomer()){
+    $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
+    if($is_member) $coupons = $block->getMemberCoupons($member['id']);
+}
 
-    // store details
-    $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
+// store details
+$loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 
-    // apply price rule to checkout
-    if(array_key_exists("loyaltyProgramPriceRule", $_COOKIE)){
-        $block->getCheckoutSession()->getQuote()->setAppliedRuleIds($_COOKIE['loyaltyProgramPriceRule']);
-        setcookie("loyaltyProgramPriceRule", "", time() - 3600);
-    }
-    //TODO: automatically apply price rule if a product specific coupon exists and that same product is presented in the cart
+//TODO: automatically apply price rule if a product specific coupon exists and that same product is presented in the cart
 ?>
 <?php if($is_member && $loyaltyDetails['pointsSystem']['enabled']) { ?>
     <div class="diller-coupon-container">
@@ -46,28 +41,12 @@
                         </div>
                     </div>
                     <div class="diller-coupon-inner-bottom">
-                        <button id="apply_coupon" onclick="applyCoupon(<?= $external_ids[0]["externalId"] ?>)" <?= !empty($block->getCheckoutSession()->getQuote()['items']) ? '' : 'disabled' ?>>Apply coupon</button>
-                        <?php if(empty($block->getCheckoutSession()->getQuote()['items'])){ ?>
-                            <span">Add products to cart in order to apply coupons</span>
-                        <?php } ?>
+                        <p>Promo code: <b><?= $coupon->getCode() ?></b></p>
                     </div>
                 </div>
             <?php }
         } ?>
     </div>
-
-    <script>
-        function applyCoupon(price_rule_id) {
-            setCookie('loyaltyProgramPriceRule', price_rule_id);
-        }
-
-        function setCookie(name, value) {
-            let date = new Date();
-            date.setTime(date.getTime() + (2*24*60*60*1000));
-            let expires = "; expires=" + date.toUTCString();
-            document.cookie = name + "=" + (value || "")  + expires + "; path=/";
-        }
-    </script>
 
 
     <style>

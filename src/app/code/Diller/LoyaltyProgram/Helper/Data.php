@@ -4,6 +4,7 @@ namespace Diller\LoyaltyProgram\Helper;
 
 use DillerAPI\DillerAPI;
 use DillerAPI\ApiException;
+use DillerAPI\Model\CouponReservationRequest;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Helper\AbstractHelper;
@@ -149,6 +150,23 @@ class Data extends AbstractHelper{
     public function getMemberCoupons($member_id){
         try {
             return $this->dillerAPI->Coupons->getMemberCoupons($this->store_uid, $member_id);
+        }
+        catch (Exception $ex){
+            return false;
+        }
+    }
+    public function validateMemberCoupon($member_id, $coupon){
+        try {
+            return $this->dillerAPI->Coupons->validateCoupon($this->store_uid, $member_id, $coupon);
+        }
+        catch (Exception $ex){
+            return false;
+        }
+    }
+    public function reserveMemberCoupon($member_id, $coupon, $order_id){
+        try {
+            $reservationRequest = new CouponReservationRequest(array("channel" => "Magento", "externalTransactionId" => $order_id));
+            return $this->dillerAPI->Coupons->reserveCoupon($this->store_uid, $member_id, $coupon, $reservationRequest);
         }
         catch (Exception $ex){
             return false;
