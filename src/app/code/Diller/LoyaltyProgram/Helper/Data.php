@@ -9,6 +9,8 @@ use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\ScopeInterface;
 
 use libphonenumber\PhoneNumberUtil;
@@ -200,8 +202,20 @@ class Data extends AbstractHelper{
     }
 
     // ----------------------------------------------------> Magento customer related methods
+
+    /**
+     * @throws NoSuchEntityException
+     * @throws LocalizedException
+     */
     public function searchMemberByCustomerId($id){
-        if($customer = $this->customerRepository->getById($id)){
+        $customer = false;
+        try {
+            $customer = $this->customerRepository->getById($id);
+        }
+        catch (NoSuchEntityException $ex){
+        }
+
+        if($customer){
             // search member with diller_member_id customer attribute
             if($attribute = $customer->getCustomAttribute('diller_member_id')){
                 if($member = $this->getMemberById($attribute->getValue())){
