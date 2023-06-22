@@ -8,7 +8,9 @@
             <block class="Diller\LoyaltyProgram\Block\Frontend\Member" name="points"
                    template="Diller_LoyaltyProgram::customer/points.phtml"/>
             <block class="Diller\LoyaltyProgram\Block\Frontend\Member" name="coupons"
-                   template="Diller_LoyaltyProgram::customer/coupons.phtml"/>
+                   template="Diller_LoyaltyProgram::coupons.phtml"/>
+            <block class="Diller\LoyaltyProgram\Block\Frontend\Member" name="stamp_cards"
+                   template="Diller_LoyaltyProgram::customer/stamp_cards.phtml"/>
         </referenceContainer>
     </body>
 </page>

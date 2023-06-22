@@ -7,10 +7,15 @@
     <event name="customer_save_after_data_object">
         <observer name="update_customer" instance="Diller\LoyaltyProgram\Observer\SaveMemberOnCustomerChangeObserver" />
     </event>
+
     <event name="sales_order_save_after">
         <observer name="register_transaction" instance="Diller\LoyaltyProgram\Observer\RegisterTransactionOnOrderStatusChange"/>
     </event>
     <event name="sales_model_service_quote_submit_before">
         <observer name="set_customer_consent" instance="Diller\LoyaltyProgram\Observer\GetCustomerConsentAndRegisterMemberOnCheckoutSubmitBefore"/>
+    </event>
+
+    <event name="checkout_submit_before">
+        <observer name="checkout_quote_init" instance="Diller\LoyaltyProgram\Observer\ApplyStampCardsOnCartUpdate"/>
     </event>
 </config>

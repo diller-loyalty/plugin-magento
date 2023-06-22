@@ -7,7 +7,10 @@ namespace Diller\LoyaltyProgram\Block\Frontend;
 
 use Diller\LoyaltyProgram\Helper\Data;
 
+use DillerAPI\DillerAPI;
+
 use Magento\Customer\Helper\View;
+use Magento\Checkout\Model\Session;
 use Magento\Framework\View\Element\Template;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Customer\Helper\Session\CurrentCustomer;
@@ -44,14 +47,9 @@ class Member extends Template {
     private String $store_uid;
 
     /**
-     * @var LoyaltyDetails
+     * @var Session
      */
-    private LoyaltyDetails $loyaltyDetails;
-
-    /**
-     * @var \Magento\Checkout\Model\Session
-     */
-    private \Magento\Checkout\Model\Session $checkoutSession;
+    private Session $checkoutSession;
 
     /**
      * Constructor
@@ -60,7 +58,7 @@ class Member extends Template {
      * @param CurrentCustomer $currentCustomer
      * @param View $viewHelper
      * @param Data $loyaltyHelper
-     * @param \Magento\Checkout\Model\Session $checkoutSession
+     * @param Session $checkoutSession
      * @param array $data
      */
     public function __construct(
@@ -68,7 +66,7 @@ class Member extends Template {
         CurrentCustomer $currentCustomer,
         View $viewHelper,
         Data $loyaltyHelper,
-        \Magento\Checkout\Model\Session $checkoutSession,
+        Session $checkoutSession,
         array $data = []
     ) {
         $this->currentCustomer = $currentCustomer;
@@ -117,6 +115,10 @@ class Member extends Template {
 
     public function getMemberCoupons($id){
         return $this->_loyaltyHelper->getMemberCoupons($id);
+    }
+
+    public function getMemberStampCards($id){
+        return $this->_loyaltyHelper->getMemberStampCards($id);
     }
 
     public function getCheckoutSession(){

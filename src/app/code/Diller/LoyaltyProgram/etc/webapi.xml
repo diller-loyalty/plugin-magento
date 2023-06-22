@@ -6,4 +6,10 @@
             <resource ref="anonymous"/>
         </resources>
     </route>
+    <route method="POST" url="/V1/diller-loyaltyprogram/stampcard">
+        <service class="Diller\LoyaltyProgram\Api\CouponManagementInterface" method="setStampCard"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
 </routes>

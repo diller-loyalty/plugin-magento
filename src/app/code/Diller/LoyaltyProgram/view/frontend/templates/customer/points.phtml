@@ -41,7 +41,7 @@
         <div class="diller-membership-progress">
             <div class="diller-membership-progress-points">
                 <?php
-                    $max_points = 0;
+                    $max_points = end($membershipLevels)['points'];
                     foreach($membershipLevels as $level){
                         if ($max_points < $level['points']) $max_points = $level['points'];
                         echo "<div data-points='".$level['points']."'><b>" . $level['name'] . '</b><br>' . $level['points'] . '</div>';
@@ -49,7 +49,7 @@
                 ?>
             </div>
             <div class="diller-membership-progress-bar">
-                <div class="diller-membership-progress-bar-indicator" style="width:calc(<?= (int)100*$member['membershipDetail']['points']/$max_points ?>% - 14px);"><span><?=$member['membershipDetail']['points']?></span></div>
+                <div class="diller-membership-progress-bar-indicator" style="width:calc(<?= ((100*$member['membershipDetail']['points'])/$max_points) ?>% - 14px);"><span><?=$member['membershipDetail']['points']?></span></div>
             </div>
         </div>
     </div>
@@ -58,12 +58,15 @@
         let membership_levels_elements = document.querySelectorAll('.diller-membership-progress-points div');
         let membership_levels_points = [];
         membership_levels_elements.forEach((level) => {
-            membership_levels_points.push(level.getAttribute("data-points"));
+            membership_levels_points.push(parseInt(level.getAttribute("data-points")));
         });
-        membership_levels_points.sort();
+        membership_levels_points.sort(compareNumbers);
         membership_levels_elements.forEach((level) => {
             level.style.left = 100*level.getAttribute("data-points")/membership_levels_points[membership_levels_points.length - 1] + '%';
         });
+        function compareNumbers(a, b) {
+            return a - b;
+        }
     </script>
 
     <style>

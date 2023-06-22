@@ -3,15 +3,25 @@
 namespace Diller\LoyaltyProgram\Helper;
 
 use DillerAPI\DillerAPI;
-use DillerAPI\ApiException;
+use DillerAPI\Configuration;
 use DillerAPI\Model\CouponReservationRequest;
+
+use Magento\Framework\Api\Filter;
+use Magento\SalesRule\Model\Rule;
+use Magento\Store\Model\ScopeInterface;
+use Magento\Framework\App\Helper\Context;
+use Magento\SalesRule\Model\RuleRepository;
+use Magento\Framework\ObjectManagerInterface;
+use Magento\Quote\Api\CartRepositoryInterface;
+use Magento\Framework\App\Helper\AbstractHelper;
+use Magento\SalesRule\Api\RuleRepositoryInterface;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\SalesRule\Api\CouponRepositoryInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Framework\App\Helper\AbstractHelper;
-use Magento\Framework\App\Helper\Context;
-use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Store\Model\ScopeInterface;
+use Magento\Framework\Api\Search\SearchCriteriaBuilder;
 
 use libphonenumber\PhoneNumberUtil;
 use Exception;
@@ -23,31 +33,37 @@ use Exception;
  */
 
 class Data extends AbstractHelper{
-    /**
-     * @var DillerAPI
-     */
-    private $dillerAPI;
+    private DillerAPI $dillerAPI;
+    private String $store_uid;
 
-    /**
-     * @var String
-     */
-    private $store_uid;
+    protected CustomerRepositoryInterface $customerRepository;
 
-    /**
-     * @var CustomerRepositoryInterface
-     */
-    protected $customerRepository;
+    protected ProductRepositoryInterface $productRepository;
+
+    protected RuleRepository $ruleRepository;
+    protected ObjectManagerInterface $_objectManager;
 
     /**
      * @param Context $context
      * @param ScopeConfigInterface $scopeConfig
      * @param CustomerRepositoryInterface $customerRepository
+     * @param ProductRepositoryInterface $productRepository
+     * @param RuleRepository $ruleRepository
      */
-    public function __construct(Context $context, ScopeConfigInterface $scopeConfig, CustomerRepositoryInterface $customerRepository) {
+    public function __construct(
+        Context $context,
+        ScopeConfigInterface $scopeConfig,
+        CustomerRepositoryInterface $customerRepository,
+        ProductRepositoryInterface $productRepository,
+        RuleRepository $ruleRepository,
+        ObjectManagerInterface $_objectManager) {
         $this->scopeConfig = $scopeConfig;
         $this->customerRepository = $customerRepository;
+        $this->productRepository = $productRepository;
+        $this->ruleRepository = $ruleRepository;
+        $this->_objectManager = $_objectManager;
 
-        $configs = clone \DillerAPI\Configuration::getDefaultConfiguration();
+        $configs = clone Configuration::getDefaultConfiguration();
         // to set module to production mode
         // $configs->setHost("https://api.dillerapp.com");
 
@@ -57,13 +73,13 @@ class Data extends AbstractHelper{
 
         if($this->store_uid){
             $api_key = $this->scopeConfig->getValue('dillerloyalty/settings/api_key', ScopeInterface::SCOPE_STORE);
-            try {
-                $this->dillerAPI = new \DillerAPI\DillerAPI($this->store_uid, $api_key);
-            }
-            catch (ApiException $ex){
-            }
+            $this->dillerAPI = new DillerAPI($this->store_uid, $api_key);
         }
         parent::__construct($context);
+    }
+
+    public function getModuleStatus(){
+        return $this->scopeConfig->getValue('dillerloyalty/settings/loyalty_program_enabled', ScopeInterface::SCOPE_STORE) ?? 0;
     }
 
     // ------------------------------------------------------------------------------
@@ -175,6 +191,16 @@ class Data extends AbstractHelper{
         }
     }
 
+
+    public function getMemberStampCards($member_id){
+        try {
+            return $this->dillerAPI->StampCards->getMemberStampCards($this->store_uid, $member_id);
+        }
+        catch (Exception $ex){
+            return false;
+        }
+    }
+
     public function registerMember($data){
         try {
             return $this->dillerAPI->Members->registerMember($this->store_uid, $data);
@@ -201,7 +227,7 @@ class Data extends AbstractHelper{
         }
     }
 
-    // ----------------------------------------------------> Magento customer related methods
+    // ----------------------------------------------------> Magento specific related methods
 
     /**
      * @throws NoSuchEntityException
@@ -228,7 +254,7 @@ class Data extends AbstractHelper{
                 if(!empty($result)){
                     return $result[0];
                 }
-            };
+            }
 
             // search member by customer email
             $result = $this->getMember($customer->getEmail());
@@ -240,15 +266,19 @@ class Data extends AbstractHelper{
     }
 
     public function getCustomerPhoneNumber($id){
-        if($customer = $this->customerRepository->getById($id)) {
-            if ($addresses = $customer->getAddresses()) {
-                foreach ($addresses as $customer_address) {
-                    if($phone_number = $this->getPhoneNumberFromAddress($customer_address)){
-                        return $phone_number;
+        try {
+            if($customer = $this->customerRepository->getById($id)) {
+                if ($addresses = $customer->getAddresses()) {
+                    foreach ($addresses as $customer_address) {
+                        if($phone_number = $this->getPhoneNumberFromAddress($customer_address)){
+                            return $phone_number;
+                        }
                     }
                 }
             }
         }
+        catch (NoSuchEntityException|LocalizedException $ex) {}
+
         return false;
     }
 
@@ -279,6 +309,71 @@ class Data extends AbstractHelper{
         } catch (Exception $ex) {
             return false;
         }
+        return false;
+    }
+
+    public function getMagentoProduct($product_id){
+        try {
+            return $this->productRepository->getById($product_id);
+        } catch (NoSuchEntityException $ex) {
+            return false;
+        }
+    }
+
+    public function getPriceRule($price_rule_id, $promo_code = ''){
+        try {
+            /** @var Rule $price_rule */
+            $price_rule = $this->ruleRepository->getById($price_rule_id);
+        } catch (NoSuchEntityException|LocalizedException $ex) {
+            if(!empty($promo_code)){
+                try {
+                    $price_rule = $this->getPriceRuleByPromoCode($promo_code);
+                } catch (LocalizedException $ex) {}
+            }
+        }
+        return $price_rule ?? false;
+    }
+
+    /**
+     * @throws LocalizedException
+     */
+    private function getPriceRuleByPromoCode($promo_code){
+        $filter = new Filter();
+        $filter->setField('code')->setValue($promo_code);
+
+        $searchCriteriaBuilder = $this->_objectManager->get(SearchCriteriaBuilder::class);
+        $searchCriteria = $searchCriteriaBuilder->addFilter($filter)->create();
+
+        /** @var CouponRepositoryInterface $couponRepository */
+        $couponRepository = $this->_objectManager->get(CouponRepositoryInterface::class);
+        if(($items = $couponRepository->getList($searchCriteria)->getItems()) && !empty($items)){
+            foreach ($items as $item){
+                if($price_rule = $this->getPriceRule($item['rule_id'])){
+                    return $price_rule;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public function getPriceRuleByName(string $name){
+        $filter = new Filter();
+        $filter->setField('name')->setValue($name);
+
+        $searchCriteriaBuilder = $this->_objectManager->get(SearchCriteriaBuilder::class);
+        $searchCriteria = $searchCriteriaBuilder->addFilter($filter)->create();
+
+        /** @var CartRepositoryInterface $quoteRepository */
+        $ruleRepository = $this->_objectManager->get(RuleRepositoryInterface::class);
+        try {
+            if(($items = $ruleRepository->getList($searchCriteria)->getItems()) && !empty($items)){
+                foreach ($items as $item){
+                    return $this->getPriceRule($item->getRuleId());
+                }
+            }
+        }catch(LocalizedException $ex){}
+
         return false;
     }
 }

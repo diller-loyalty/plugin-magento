@@ -30,17 +30,6 @@
                     <label>API key</label>
                     <validate>required-entry</validate>
                 </field>
-                <field id="test_connection" translate="label" type="button" showInDefault="1" showInWebsite="0" showInStore="1">
-                    <label>Test connection</label>
-                    <frontend_model>Diller\LoyaltyProgram\Block\Adminhtml\TestConnection</frontend_model>
-                    <depends>
-                        <field id="loyalty_program_enabled">1</field>
-                    </depends>
-                </field>
-                <field id="department" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <source_model>Diller\LoyaltyProgram\Model\Config\Source\StoreDepartments</source_model>
-                    <label>Department</label>
-                </field>
                 <field id="transaction_status" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="1">
                     <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
                     <label>Send order to Diller when order is in the following status</label>

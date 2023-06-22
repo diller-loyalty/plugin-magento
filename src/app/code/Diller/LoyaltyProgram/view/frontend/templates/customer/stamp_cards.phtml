@@ -1,0 +1,106 @@
+<?php
+/** @var Member $block */
+use Diller\LoyaltyProgram\Block\Frontend\Member;
+
+$loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
+
+// member details
+$is_member = false;
+if($customer = $block->getCustomer()){
+    $valid_stamp_cards = $stamp_cards = [];
+    $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
+    if($is_member && $stamp_cards = $block->getMemberStampCards($member['id'])){
+        foreach ($stamp_cards as $stamp_card) {
+            $stamp_card_products = [];
+            foreach ($stamp_card->getProductIds() as $productId){
+                if($product_found = $loyaltyHelper->getMagentoProduct($productId)){
+                    $stamp_card_products[] = $product_found;
+                }
+            }
+            $stamp_card['products'] = $stamp_card_products;
+            if(!empty($stamp_card_products)) $valid_stamp_cards[] = $stamp_card;
+        }
+    }
+}
+?>
+<?php if($is_member && !empty($valid_stamp_cards)) { ?>
+    <div class="diller-container stamp-cards">
+        <h2 class="page-title">
+            <span class="base" data-ui-id="page-title-wrapper">Stamp Cards</span>
+        </h2>
+        <hr>
+        <?php foreach ($valid_stamp_cards as $stamp_card) { ?>
+            <div class="stamp-card id_<?= $stamp_card->getId() ?>">
+                <h3><?= $stamp_card->getTitle() ?></h3>
+                <p><?= $stamp_card->getDescription() ?></p>
+                <div class="stamps">
+                    <?php for ($x = 1; $x <= $stamp_card->getRequiredStamps(); $x++) { ?>
+                        <div class="stamp <?= $stamp_card->getStampsCollected() >= $x ? 'collected' : '' ?>">
+                        </div>
+                    <?php } ?>
+                </div>
+                <div class="products">
+                    <?= "<p>To add a new stamp to this card, you must buy " . (count($stamp_card['products']) > 1 ? "one of following products" : "the following product") . '</p>' ?>
+                    <ul>
+                        <?php foreach($stamp_card['products'] as $product){ ?>
+                            <li><a href="<?= $product->getProductUrl() ?>" target="_blank"><?= $product->getName() ?></a></li>
+                        <?php } ?>
+                    </ul>
+                </div>
+            </div>
+            <style>
+                .stamp-cards .id_<?= $stamp_card->getId() ?> .collected{
+                    background-image: url("<?= $stamp_card->getImageUrl() ?>") !important; background-color: #fff !important;
+                }
+            </style>
+        <?php } ?>
+    </div>
+    <style>
+        .stamp-card {
+            margin: 0 0 40px;
+            float: left;
+            width: 100%;
+        }
+        .stamp-card h3 {
+            text-transform: capitalize;
+            margin: 0 0 5px;
+        }
+        .stamp-card p {
+            margin: 0 0 15px;
+        }
+        .stamp-card .stamps {
+            display: flex;
+            gap: 10px;
+        }
+        .stamp-card .stamps .price{
+            justify-content: center;
+            align-items: center;
+            width: min-content;
+            font-weight: 600;
+            min-width: 80px;
+            display: flex;
+        }
+        .stamp-card .stamps .stamp {
+            width: 60px;
+            height: 60px;
+            background: #f5f5f5;
+            display: flex;
+            border-radius: 100%;
+            background-size: 60%;
+            background-position: center center;
+            background-repeat: no-repeat;
+            border: 3px solid #f5f5f5;
+        }
+        .stamp-card .stamps .stamp.collected {
+            border-color: #90b3c7;
+        }
+        .stamp-card .products ul{
+            list-style: initial;
+            padding: 0 0 0 30px;
+            display: inline-grid;
+        }
+        .stamp-card .products ul li{
+            margin: 0 0 5px;
+        }
+    </style>
+<?php } ?>

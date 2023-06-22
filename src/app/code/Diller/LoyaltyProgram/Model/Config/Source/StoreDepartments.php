@@ -5,20 +5,14 @@
 
 namespace Diller\LoyaltyProgram\Model\Config\Source;
 
-use Diller\LoyaltyProgram\Helper\Data;
+use Diller\LoyaltyProgram\Helper\Data as DillerLoyaltyHelper;
 use Magento\Framework\Data\OptionSourceInterface;
 
 class StoreDepartments implements OptionSourceInterface{
 
-    /**
-     * @var Data
-     */
-    protected Data $loyaltyHelper;
+    protected DillerLoyaltyHelper $loyaltyHelper;
 
-    /**
-     * @param Data $loyaltyHelper
-     */
-    public function __construct(Data $loyaltyHelper) {
+    public function __construct(DillerLoyaltyHelper $loyaltyHelper) {
         $this->loyaltyHelper = $loyaltyHelper;
     }
 
@@ -26,14 +20,16 @@ class StoreDepartments implements OptionSourceInterface{
      * @inheritdoc
      */
     public function toOptionArray(): array{
-        $storeDepartments = $this->loyaltyHelper->getStoreDepartments();
         $result = [];
-        if(is_array($storeDepartments)){
-            foreach ($storeDepartments as $department){
-                $result[] = array(
-                    "value" => $department['id'],
-                    "label" => $department['name']
-                );
+        if($this->loyaltyHelper->getModuleStatus()){
+            $storeDepartments = $this->loyaltyHelper->getStoreDepartments();
+            if(is_array($storeDepartments)){
+                foreach ($storeDepartments as $department){
+                    $result[] = array(
+                        "value" => $department['id'],
+                        "label" => $department['name']
+                    );
+                }
             }
         }
         return $result;

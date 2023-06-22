@@ -8,4 +8,11 @@ interface CouponManagementInterface {
      * @return int|boolean
      */
     public function setCoupon($details);
+
+    /**
+     * POST for stamp card creation/update
+     * @param mixed $details
+     * @return int|boolean
+     */
+    public function setStampCard($details);
 }
