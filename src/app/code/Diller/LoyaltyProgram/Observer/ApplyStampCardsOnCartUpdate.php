@@ -78,6 +78,19 @@ class ApplyStampCardsOnCartUpdate implements ObserverInterface{
         if(!($quote = $observer->getEvent()->getData('cart')->getData('quote'))) return true;
         if(!($customer = $quote->getCustomer())) return true;
 
+        // remove stamp card rules from cart
+        if($rule_id = $observer->getEvent()->getData('cart')->getData('quote')->getData("applied_rule_ids")){
+            $price_rule = $this->ruleRepository->getById($rule_id);
+            if(str_contains($price_rule->getName(), "Stamp card")){
+                $observer->getEvent()->getData('cart')->getData('quote')
+                    ->setData("applied_rule_ids", '');
+                $observer->getEvent()->getData('cart')->getData('quote')
+                    ->setCouponCode('')
+                    ->collectTotals()
+                    ->save();
+            }
+        }
+
         // get member
         if(!($member = $this->loyaltyHelper->searchMemberByCustomerId($customer->getId()))) return true;
 
@@ -86,6 +99,7 @@ class ApplyStampCardsOnCartUpdate implements ObserverInterface{
         if(empty($stamp_cards)) return true;
         $stamp_cards_price_rules = [];
 
+        // get stamp cards rules
         foreach ($stamp_cards as $stamp_card){
             $price_rule = false;
             try {
@@ -104,11 +118,13 @@ class ApplyStampCardsOnCartUpdate implements ObserverInterface{
             $stamp_cards_price_rules[] = $stamp_card_rules;
         }
 
-        // get cart products
+        // get cart items
         $cart_items = $quote->getData('items');
         if(empty($cart_items)) return true;
 
-        // check all stamp cards price rules and get those who matched the cart products
+        // check all stamp cards price rules and select the ones that matched the cart items
+        // we're updating the quantity field if more than one product matches the same stamp card
+        // we're also saving in the array the "stamps_to_full" in order to validate the free product eligibility in the next step
         if(empty($stamp_cards_price_rules)) return true;
         $applicable_price_rules = [];
         foreach ($stamp_cards_price_rules as $stamp_card_rule){
@@ -116,18 +132,27 @@ class ApplyStampCardsOnCartUpdate implements ObserverInterface{
             $conditions = $stamp_card_rule["price_rule"]->getActionCondition()->getConditions();
             foreach ($cart_items as $cart_item){
                 if(in_array($cart_item->getSku(), explode(",", $conditions[0]->getValue()))){
+                    $cart_item->setAdditionalData("eligible_to_stamp_card_discount");
                     $applicable_rule['price_rule'] = $stamp_card_rule["price_rule"];
                     $applicable_rule['quantity'] += $cart_item->getQty();
                     $applicable_rule['stamps_to_full'] = $stamp_card_rule["stamps_to_full"];
+                }else{
+                    $cart_item->setAdditionalData(null);
                 }
             }
             if(!empty($applicable_rule)) $applicable_price_rules[$stamp_card_rule["price_rule"]->getRuleId()] = $applicable_rule;
         }
 
+        // walk through the applicable price rules and apply the valid one
+        // when setting the coupon code, the StampCardDiscount.php will be called and the discount will be set based on the cheapest of the eligible products presented in the cart
         if(empty($applicable_price_rules)) return true;
         foreach ($applicable_price_rules as $price_rule_data){
             if($price_rule_data['quantity'] >= $price_rule_data['stamps_to_full']){
-                if($coupon_code = $this->generateCouponCode($price_rule_data["price_rule"]->getRuleId())){
+                if($coupon_code = $this->generateCouponCode($price_rule_data["price_rule"]->getRuleId(), str_replace(["Stamp card - "," "], "", $price_rule_data["price_rule"]->getName()))){
+                    $observer->getEvent()->getData('cart')->getData('quote')
+                        ->setCouponCode($coupon_code)
+                        ->collectTotals()
+                        ->save();
                 }
             }
         }
@@ -135,7 +160,7 @@ class ApplyStampCardsOnCartUpdate implements ObserverInterface{
         return true;
     }
 
-    private function generateCouponCode(int $ruleId){
+    private function generateCouponCode(int $ruleId, string $stampCardName): bool|string{
         try {
             $rule = $this->ruleRepository->getById($ruleId);
         } catch(LocalizedException $ex){
@@ -145,9 +170,9 @@ class ApplyStampCardsOnCartUpdate implements ObserverInterface{
         $data = [
             'rule_id' => $rule->getRuleId(),
             'qty' => '1',
-            'length' => '10', //change to your requirements
+            'length' => '6', //change to your requirements
             'format' => 'alphanum', //options alphanum, num, alpha
-            'prefix' => 'DLR_',
+            'prefix' => strtoupper($stampCardName) . '_',
             'suffix' => '',
         ];
         return $this->couponGenerator->generateCodes($data)[0];

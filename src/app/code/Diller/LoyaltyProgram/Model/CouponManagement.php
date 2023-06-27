@@ -1,7 +1,6 @@
 <?php
 namespace Diller\LoyaltyProgram\Model;
 
-use Magento\Framework\Api\Filter;
 use Diller\LoyaltyProgram\Helper\Data;
 use Magento\SalesRule\Model\Rule;
 use Magento\SalesRule\Model\RuleFactory;
@@ -13,9 +12,7 @@ use Magento\Framework\Exception\InputException;
 use Magento\SalesRule\Api\Data\ConditionInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\SalesRule\Api\CouponRepositoryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\Api\Search\SearchCriteriaBuilder;
 use Magento\SalesRule\Api\Data\ConditionInterfaceFactory;
 use Magento\Customer\Model\ResourceModel\Group\Collection;
 
@@ -169,12 +166,21 @@ class CouponManagement {
         // we need to set the price rules name with a specific name structure
         // we'll go with "Stamp Card - {STAMP CARD TEXT ON LAST STAMP}"
 
-        // search price rule
-        $price_rule = $this->loyaltyHelper->getPriceRuleByName("Stamp Card - " . $details['title']);
+        // search price rule by ID
+        try {
+            if(array_key_exists("ecommerce_external_id", $details)){
+                $price_rule = $this->loyaltyHelper->getPriceRule($details['ecommerce_external_id'], '');
+            }
+        } catch (NoSuchEntityException $e) {}
+
+        // search by name
+        if(!$price_rule){
+            $price_rule = $this->loyaltyHelper->getPriceRuleByName("Stamp Card - " . $details['title']);
+        }
 
         // if a price rule was found and the delete flag sent
         if($price_rule && (array_key_exists("delete", $details) && $details['delete'])){
-            $price_rule->delete();
+            $this->ruleRepository->deleteById($price_rule->getRuleId());
             return "Rule deleted";
         }
 
@@ -183,7 +189,7 @@ class CouponManagement {
 
         // General rule data
         $price_rule
-            ->setName($details['title'])
+            ->setName("Stamp card - " . $details['title'])
             ->setDescription($details['coupon_description'])
             ->setIsAdvanced(true)
             ->setStopRulesProcessing(true)
@@ -197,7 +203,7 @@ class CouponManagement {
             ->setDiscountStep(1)
             ->setDiscountQty(1)
             ->setCouponType(Rule::COUPON_TYPE_SPECIFIC)
-            ->setSimpleAction(RuleInterface::DISCOUNT_ACTION_BY_PERCENT)
+            ->setSimpleAction("loyalty_stamp_card")
             ->setDiscountAmount('100')
             ->setUseAutoGeneration(1)
             ->setIsActive(true);
@@ -206,56 +212,64 @@ class CouponManagement {
             $price_rule->setToDate($details['expire_date']);
         }
 
-        $conditionCombine = null;
-        if(!empty($details['product_id'])){
-            $price_rule_conditions = $price_rule_product_ids = [];
-            foreach (explode(',', $details["product_id"]) as $product_id){
-                try {
-                    $product = $this->productRepository->getById($product_id, false, $website_id);
-
-                    /** @var ConditionInterface $conditionProductId */
-                    $conditionProductId = $this->conditionFactory->create();
-                    $conditionProductId->setConditionType(\Magento\SalesRule\Model\Rule\Condition\Product::class);
-                    $conditionProductId->setAttributeName('id');
-                    $conditionProductId->setValue('1');
-                    $conditionProductId->setOperator('=');
-                    $conditionProductId->setValue($product_id);
-
-                    $price_rule_conditions[] = $conditionProductId;
-                    $price_rule_product_ids[] = $product_id;
-                } catch (NoSuchEntityException $e) {}
-            }
-
-            if(!empty($price_rule_conditions)){
-                /** @var ConditionInterface $conditionProductFound */
-                $conditionProductFound = $this->conditionFactory->create();
-                $conditionProductFound->setConditionType(\Magento\SalesRule\Model\Rule\Condition\Product\Found::class);
-                $conditionProductFound->setValue('1');
-                $conditionProductFound->setAggregatorType('all');
-                $conditionProductFound->setConditions($price_rule_conditions);
-
-                /** @var ConditionInterface $conditionCombine */
-                $conditionCombine = $this->conditionFactory->create();
-                $conditionCombine->setConditionType(\Magento\SalesRule\Model\Rule\Condition\Combine::class);
-                $conditionCombine->setValue('1');
-                $conditionCombine->setAggregatorType('all');
-                $conditionCombine->setConditions([$conditionProductFound]);
-
-                $price_rule->setCondition($conditionCombine);
-                $price_rule->setProductIds($price_rule_product_ids);
-            }
-        }
-        $price_rule->setCondition($conditionCombine);
-
-        // when updating existing price rules
-        if(method_exists($price_rule, "save")){
-            $save = $price_rule->save();
-            $price_rule_id = $price_rule->getId();
-        }else{ // when creating a new one
-            $save = $this->ruleRepository->save($price_rule);
-            $price_rule_id = $save->getRuleId();
+        if(empty($details['ecommerce_product_id'])) return true;
+        $product_skus = [];
+        foreach (explode(',', $details["ecommerce_product_id"]) as $product_id){
+            try {
+                if($product = $this->productRepository->getById($product_id, false, $website_id)){
+                    $product_skus[] = $product->getSku();
+                };
+            } catch (NoSuchEntityException $e) {}
         }
 
-        return $save->getRuleId() ?? false;
+        if(empty($product_skus)) return true;
+        /** @var ConditionInterface $actionConditionProduct */
+        $actionConditionProduct = $this->conditionFactory->create();
+        $actionConditionProduct->setConditionType(\Magento\SalesRule\Model\Rule\Condition\Product::class)
+            ->setAttributeName("sku")
+            ->setOperator("()")
+            ->setValue(implode(",", $product_skus));
+
+        /** @var ConditionInterface $actionCondition */
+        $actionCondition = $this->conditionFactory->create();
+        $actionCondition->setConditionType(\Magento\SalesRule\Model\Rule\Condition\Product\Combine::class)
+            ->setValue('1')
+            ->setAggregatorType('all')
+            ->setConditions([$actionConditionProduct]);
+
+        $price_rule->setActionCondition($actionCondition);
+
+        $id = false;
+        try {
+            $result = $this->ruleRepository->save($price_rule);
+            $id = $result->getRuleId();
+        } catch (\Throwable $e) {
+
+            // new price rule
+            $action = array(
+                "type" => \Magento\SalesRule\Model\Rule\Condition\Product\Combine::class,
+                "attribute" => null,
+                "operator" => null,
+                "value" => 1,
+                "is_value_processed" => null,
+                "aggregator" => "all",
+                "conditions" => array(
+                    array(
+                        "type" => \Magento\SalesRule\Model\Rule\Condition\Product::class,
+                        "attribute" => "sku",
+                        "operator" => "()",
+                        "value" => implode(",", $product_skus),
+                        "is_value_processed" => false,
+                        "attribute_scope" => ""
+                    )
+                )
+            );
+
+            $price_rule->setData("actions_serialized", json_encode($action));
+
+            $price_rule->save();
+            $id = $price_rule->getId();
+        }
+        return $id;
     }
 }

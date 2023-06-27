@@ -4,6 +4,7 @@
         <dillerloyalty>
             <settings>
                 <loyalty_program_enabled>No</loyalty_program_enabled>
+                <loyalty_fields_mandatory>Yes</loyalty_fields_mandatory>
             </settings>
         </dillerloyalty>
     </default>

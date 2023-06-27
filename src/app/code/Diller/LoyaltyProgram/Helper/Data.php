@@ -2,6 +2,7 @@
 
 namespace Diller\LoyaltyProgram\Helper;
 
+use DillerAPI\ApiException;
 use DillerAPI\DillerAPI;
 use DillerAPI\Configuration;
 use DillerAPI\Model\CouponReservationRequest;
@@ -78,18 +79,28 @@ class Data extends AbstractHelper{
         parent::__construct($context);
     }
 
+    private function isConnected(){
+        if(!$this->store_uid) return false;
+        return true;
+    }
+
     public function getModuleStatus(){
         return $this->scopeConfig->getValue('dillerloyalty/settings/loyalty_program_enabled', ScopeInterface::SCOPE_STORE) ?? 0;
+    }
+
+    public function loyaltyFieldsMandatory(){
+        return $this->scopeConfig->getValue('dillerloyalty/settings/loyalty_fields_mandatory', ScopeInterface::SCOPE_STORE) ?? 0;
     }
 
     // ------------------------------------------------------------------------------
     // --------------------------------------> STORE
     // ------------------------------------------------------------------------------
     public function getLoyaltyDetails() {
+        if(!$this->isConnected()) return false;
         try {
             return $this->dillerAPI->Stores->get($this->store_uid);
         }
-        catch (Exception $ex){
+        catch (ApiException $ex){
             return false;
         }
     }
@@ -150,6 +161,7 @@ class Data extends AbstractHelper{
     // --------------------------------------> MEMBER
     // ------------------------------------------------------------------------------
     public function getMemberById($id){
+        if(!$this->isConnected()) return false;
         try {
             return $this->dillerAPI->Members->getMemberById($this->store_uid, $id);
         }
@@ -158,6 +170,7 @@ class Data extends AbstractHelper{
         }
     }
     public function getMember($email = '', $phone = ''){
+        if(!$this->isConnected()) return false;
         try {
             return $this->dillerAPI->Members->getMemberByFilter($this->store_uid, $email, $phone);
         }
