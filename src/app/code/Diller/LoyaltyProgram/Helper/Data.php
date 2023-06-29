@@ -7,8 +7,9 @@ use DillerAPI\DillerAPI;
 use DillerAPI\Configuration;
 use DillerAPI\Model\CouponReservationRequest;
 
+use DillerAPI\Model\StampReservationRequest;
+use DillerAPI\Model\StoreResponse;
 use Magento\Framework\Api\Filter;
-use Magento\SalesRule\Model\Rule;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\App\Helper\Context;
 use Magento\SalesRule\Model\RuleRepository;
@@ -50,6 +51,7 @@ class Data extends AbstractHelper{
      * @param CustomerRepositoryInterface $customerRepository
      * @param ProductRepositoryInterface $productRepository
      * @param RuleRepository $ruleRepository
+     * @param ObjectManagerInterface $_objectManager
      */
     public function __construct(
         Context $context,
@@ -79,23 +81,29 @@ class Data extends AbstractHelper{
         parent::__construct($context);
     }
 
-    private function isConnected(){
+    private function isConnected(): bool
+    {
         if(!$this->store_uid) return false;
         return true;
     }
 
-    public function getModuleStatus(){
+    public function getModuleStatus(): bool{
         return $this->scopeConfig->getValue('dillerloyalty/settings/loyalty_program_enabled', ScopeInterface::SCOPE_STORE) ?? 0;
     }
 
-    public function loyaltyFieldsMandatory(){
+    public function areLoyaltyFieldsMandatory(): bool{
         return $this->scopeConfig->getValue('dillerloyalty/settings/loyalty_fields_mandatory', ScopeInterface::SCOPE_STORE) ?? 0;
+    }
+
+    public function reserveStampCards(): bool{
+        return $this->scopeConfig->getValue('dillerloyalty/settings/reserve_stamp_cards', ScopeInterface::SCOPE_STORE) ?? 0;
     }
 
     // ------------------------------------------------------------------------------
     // --------------------------------------> STORE
     // ------------------------------------------------------------------------------
-    public function getLoyaltyDetails() {
+    public function getLoyaltyDetails(): bool|StoreResponse
+    {
         if(!$this->isConnected()) return false;
         try {
             return $this->dillerAPI->Stores->get($this->store_uid);
@@ -204,10 +212,18 @@ class Data extends AbstractHelper{
         }
     }
 
-
     public function getMemberStampCards($member_id){
         try {
             return $this->dillerAPI->StampCards->getMemberStampCards($this->store_uid, $member_id);
+        }
+        catch (Exception $ex){
+            return false;
+        }
+    }
+    public function reserveMemberStampCard($member_id, $stamp_id, $order_id){
+        try {
+            $reservationRequest = new StampReservationRequest(array("channel" => "Magento", "externalTransactionId" => $order_id));
+            return $this->dillerAPI->Coupons->reserveCoupon($this->store_uid, $member_id, $stamp_id, $reservationRequest);
         }
         catch (Exception $ex){
             return false;
@@ -325,31 +341,44 @@ class Data extends AbstractHelper{
         return false;
     }
 
-    public function getMagentoProduct($product_id){
-        try {
-            return $this->productRepository->getById($product_id);
-        } catch (NoSuchEntityException $ex) {
-            return false;
+    public function getMagentoProduct($id, $sku = ''){
+        if(!empty($id)){
+            try {
+                return $this->productRepository->getById($id);
+            } catch (NoSuchEntityException $ex) {}
         }
+
+        if(!empty($sku)){
+            try {
+                return $this->productRepository->get($sku);
+            } catch (NoSuchEntityException $ex) {}
+        }
+
+        return false;
     }
 
-    public function getPriceRule($price_rule_id, $promo_code = ''){
-        try {
-            /** @var Rule $price_rule */
-            $price_rule = $this->ruleRepository->getById($price_rule_id);
-        } catch (NoSuchEntityException|LocalizedException $ex) {
-            if(!empty($promo_code)){
-                try {
-                    $price_rule = $this->getPriceRuleByPromoCode($promo_code);
-                } catch (LocalizedException $ex) {}
-            }
+    public function getPriceRule($id, $name = '', $promo_code = ''){
+        if(!empty($id)){
+            try {
+                return $this->ruleRepository->getById($id);
+            } catch (NoSuchEntityException|LocalizedException $ex) {}
         }
-        return $price_rule ?? false;
+
+        if(!empty($name)){
+            try {
+                return $this->getPriceRuleByName($name);
+            } catch (NoSuchEntityException|LocalizedException $ex) {}
+        }
+
+        if(!empty($promo_code)){
+            try {
+                return $this->getPriceRuleByPromoCode($promo_code);
+            } catch (NoSuchEntityException|LocalizedException $ex) {}
+        }
+
+        return false;
     }
 
-    /**
-     * @throws LocalizedException
-     */
     private function getPriceRuleByPromoCode($promo_code){
         $filter = new Filter();
         $filter->setField('code')->setValue($promo_code);
@@ -370,12 +399,16 @@ class Data extends AbstractHelper{
         return false;
     }
 
-    public function getPriceRuleByName(string $name){
+    private function getPriceRuleByName(string $name){
         $filter = new Filter();
         $filter->setField('name')->setValue($name);
+        $filterGroupBuilder = $this->_objectManager->get(\Magento\Framework\Api\Search\FilterGroupBuilder::class);
+        $filterGroup = $filterGroupBuilder->create();
+        $filterGroup->setFilters([$filter]);
 
         $searchCriteriaBuilder = $this->_objectManager->get(SearchCriteriaBuilder::class);
-        $searchCriteria = $searchCriteriaBuilder->addFilter($filter)->create();
+        $searchCriteria = $searchCriteriaBuilder->create();
+        $searchCriteria->setFilterGroups([$filterGroup]);
 
         /** @var CartRepositoryInterface $quoteRepository */
         $ruleRepository = $this->_objectManager->get(RuleRepositoryInterface::class);
@@ -388,5 +421,91 @@ class Data extends AbstractHelper{
         }catch(LocalizedException $ex){}
 
         return false;
+    }
+
+    public function validateOrderCoupons($member_id, $coupon, $products){
+        if($member_coupon = $this->validateMemberCoupon($member_id, $coupon)) {
+            if ($member_coupon->getIsOk()) {
+                return array("coupons" => [$coupon], "stamp_cards" => []);
+            }
+        }
+
+        // check if this coupon matches a stamp card price rule
+        $stamp_card_found = false;
+        $validated_stamp_cards = [];
+        if($price_rule = $this->getPriceRule('', '', $coupon)){
+            foreach ($this->getMemberStampCards($member_id) as $stamp_card) {
+                if ($price_rule->getRuleId() == $stamp_card->getExternalId() || $price_rule->getName() == 'Stamp Card - ' . $stamp_card->getTitle()) {
+                    $stamp_card_found = $stamp_card;
+                }
+            }
+            if($stamp_card_found){
+                $stamps = 0;
+                foreach ($products as $product){
+                    if($product->getAdditionalData() === 'eligible_to_stamp_card_discount'){
+                        $product_qty = 0;
+                        if(method_exists($product, "getQty")) $product_qty = $product->getQty();
+                        if(array_key_exists("qty_ordered", $product->getData()) && $product_qty == 0) $product_qty = $product->getData("qty_ordered");
+                        $stamps += $product_qty;
+                    }
+                }
+                if($stamps > 0){
+                    $validated_stamp_cards = array_fill(0, $stamps, $stamp_card_found->getId());
+                }
+            }
+        }
+        return array("coupons" => [], "stamp_cards" => $validated_stamp_cards);
+    }
+
+    public function getPriceRuleStoreCoupon(int $rule_id, string $rule_name, string $rule_coupon_code){
+        $coupons = $this->getStoreCoupons();
+        if(empty($coupons)) return false;
+
+        foreach ($coupons as $coupon){
+            foreach ($coupon->getExternalIds() as $external_id){
+                if($rule_id === $external_id || $rule_name == $coupon->getTitle() || $rule_coupon_code == $coupon->getCode()){
+                    return $coupon;
+                }
+            }
+        }
+        return false;
+    }
+
+    public function cleanCartPriceRules($quote, $cleanCoupons){
+        $rule_id = $quote->getData("applied_rule_ids");
+        $coupon_code = $quote->getCouponCode();
+
+        $removePriceRule = false;
+
+        /** @var \Diller\LoyaltyProgram\Override\Model\SalesRule\Rule $price_rule */
+        if($price_rule = $this->getPriceRule($rule_id, '', $coupon_code)){
+            if($price_rule->getSimpleAction() === 'loyalty_stamp_card'){
+                $removePriceRule = true;
+
+                // remove "eligible_to_stamp_card_discount" from cart products
+                $cart_items = $quote->getData('items');
+                if(!empty($cart_items)){
+                    foreach ($cart_items as $cart_item) {
+                        $cart_item['additional_data'] = "";
+                    }
+                }
+            }
+
+            if($cleanCoupons){
+                if($loyalty_coupon = $this->getPriceRuleStoreCoupon($price_rule->getRuleId(), $price_rule->getName(), $price_rule->getCouponCode())){
+                    if($loyalty_coupon->getType() != "Public"){
+                        $removePriceRule = true;
+                    }
+                }
+            }
+        }
+
+        if($removePriceRule){
+            $quote
+                ->setData("applied_rule_ids", '')
+                ->setCouponCode('')
+                ->collectTotals()
+                ->save();
+        }
     }
 }

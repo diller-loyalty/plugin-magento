@@ -24,3 +24,11 @@ Some helpful dev commands
 
 **// CLEAN CACHE**
 <br>bin/magento cache:clean && bin/magento cache:flush
+
+**// (IF YOU HAVE ISSUES WITH ELASTICSEARCH)**
+<br>composer config repositories.swissup composer https://docs.swissuplabs.com/packages/ <br>
+composer require swissup/module-search-mysql-legacy --prefer-source --ignore-platform-reqs<br>
+bin/magento module:enable Swissup_SearchMysqlLegacy Swissup_Core<br>
+bin/magento setup:upgrade<br>
+bin/magento setup:di:compile<br>
+bin/magento indexer:reindex catalogsearch_fulltext

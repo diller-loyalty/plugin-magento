@@ -1,12 +1,13 @@
 <?php
-namespace Diller\LoyaltyProgram\Model;
+namespace Diller\LoyaltyProgram\Api;
 
 use Diller\LoyaltyProgram\Helper\Data;
+
 use Magento\SalesRule\Model\Rule;
 use Magento\SalesRule\Model\RuleFactory;
 use Magento\SalesRule\Model\RuleRepository;
-use Magento\Framework\ObjectManagerInterface;
 use Magento\SalesRule\Api\Data\RuleInterface;
+use Magento\Framework\ObjectManagerInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Exception\InputException;
 use Magento\SalesRule\Api\Data\ConditionInterface;
@@ -159,24 +160,11 @@ class CouponManagement {
     }
 
     public function setStampCard($details){
-        $price_rule = $price_rule_id = false;
         $website_id = $this->storeManager->getStore()->getId();
 
-        // set stamp card price rule name
-        // we need to set the price rules name with a specific name structure
-        // we'll go with "Stamp Card - {STAMP CARD TEXT ON LAST STAMP}"
-
-        // search price rule by ID
-        try {
-            if(array_key_exists("ecommerce_external_id", $details)){
-                $price_rule = $this->loyaltyHelper->getPriceRule($details['ecommerce_external_id'], '');
-            }
-        } catch (NoSuchEntityException $e) {}
-
-        // search by name
-        if(!$price_rule){
-            $price_rule = $this->loyaltyHelper->getPriceRuleByName("Stamp Card - " . $details['title']);
-        }
+        // search price rule
+        $stamp_card_external_id = $details['ecommerce_external_id'] ?? '';
+        $price_rule = $this->loyaltyHelper->getPriceRule($stamp_card_external_id, "Stamp Card - " . $details['title']);
 
         // if a price rule was found and the delete flag sent
         if($price_rule && (array_key_exists("delete", $details) && $details['delete'])){
@@ -189,7 +177,7 @@ class CouponManagement {
 
         // General rule data
         $price_rule
-            ->setName("Stamp card - " . $details['title'])
+            ->setName("Stamp Card - " . $details['title'])
             ->setDescription($details['coupon_description'])
             ->setIsAdvanced(true)
             ->setStopRulesProcessing(true)
@@ -218,7 +206,7 @@ class CouponManagement {
             try {
                 if($product = $this->productRepository->getById($product_id, false, $website_id)){
                     $product_skus[] = $product->getSku();
-                };
+                }
             } catch (NoSuchEntityException $e) {}
         }
 

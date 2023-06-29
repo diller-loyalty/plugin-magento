@@ -12,8 +12,9 @@ if($customer = $block->getCustomer()){
     if($is_member && $coupons = $block->getMemberCoupons($member['id'])){
         foreach ($coupons as $coupon) {
             foreach ($coupon->getExternalIds() as $price_rule_id){
-                if($price_rule_found = $loyaltyHelper->getPriceRule($price_rule_id->getExternalId(), $coupon->getCode() ?? '')){
+                if($price_rule_found = $loyaltyHelper->getPriceRule($price_rule_id->getExternalId(), $coupon->getTitle(), $coupon->getCode())){
                     $valid_coupons[] = $coupon;
+                    continue 2;
                 }
             }
         }
@@ -22,8 +23,6 @@ if($customer = $block->getCustomer()){
 
 // store details
 $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
-
-//TODO: automatically apply price rule if a product specific coupon exists and that same product is presented in the cart
 ?>
 <?php if($is_member && $loyaltyDetails['pointsSystem']['enabled'] && !empty($valid_coupons)) { ?>
     <div class="diller-container coupons">
@@ -158,7 +157,6 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
         }
 
         .diller-coupon-usage {
-            font-size: var(--global--font-size-base);
             margin: 0;
         }
 

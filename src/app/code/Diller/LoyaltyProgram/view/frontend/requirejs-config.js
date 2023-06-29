@@ -1,4 +1,4 @@
-var config = {
+let config = {
     map: {
         '*': {
             intl: 'Diller_LoyaltyProgram/node_modules/intl-tel-input/build/js/intlTelInput',

@@ -15,7 +15,7 @@
         <observer name="set_customer_consent" instance="Diller\LoyaltyProgram\Observer\GetCustomerConsentAndRegisterMemberOnCheckoutSubmitBefore"/>
     </event>
 
-    <event name="checkout_cart_save_after">
-        <observer name="apply_stamp_card_on_checkout_save" instance="Diller\LoyaltyProgram\Observer\ApplyStampCardsOnCartUpdate"/>
+    <event name="sales_quote_collect_totals_after">
+        <observer name="validate_coupons_and_stamp_cards" instance="Diller\LoyaltyProgram\Observer\ValidateCouponsAndStampCardsOnCartUpdate"/>
     </event>
 </config>

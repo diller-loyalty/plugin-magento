@@ -17,13 +17,13 @@
 ?>
 <fieldset class="fieldset account <?= $is_member ? ('update member_' . $member->getId()) : 'create' ?> ">
     <legend class="legend"><span><?= $loyaltyDetails['storeName'] ?></span></legend><br>
-    <div class="field phonenumber <?= ($loyaltyHelper->loyaltyFieldsMandatory() || $is_member) ? 'required' : '' ?>">
+    <div class="field phonenumber <?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? 'required' : '' ?>">
         <label class="label" for="phonenumber">
             <span><?= $block->escapeHtml(__('Phone Number')) ?></span>
         </label>
         <div class="control">
             <input <?= $is_member ? 'disabled' : '' ?> type="hidden" name="loyalty_phone_countrycode" id="loyalty_phone_countrycode" data-validate="{required:true}" value="<?= $is_member ? $member->getPhone()->getCountryCode() : '' ?>">
-            <input <?= $is_member ? 'disabled' : '' ?> type="text" name="loyalty_phone_number" id="loyalty_phone_number" data-validate="{<?= ($loyaltyHelper->loyaltyFieldsMandatory() || $is_member) ? 'required:true' : '' ?>}" value="<?= $is_member ? $member->getPhone()->getNumber() : '' ?>" title="<?= $block->escapeHtmlAttr(__('Phone Number')) ?>" class="input-text">
+            <input <?= $is_member ? 'disabled' : '' ?> type="text" name="loyalty_phone_number" id="loyalty_phone_number" data-validate="{<?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? 'required:true' : '' ?>}" value="<?= $is_member ? $member->getPhone()->getNumber() : '' ?>" title="<?= $block->escapeHtmlAttr(__('Phone Number')) ?>" class="input-text">
         </div>
     </div>
 
@@ -131,13 +131,13 @@
                 default:
                     $segment_type = "text";
             } ?>
-            <div class="loyalty<?= ($segment_type === 'radio' || $segment_type === 'checkbox') ? ' options' : ''?> field<?= (($loyaltyHelper->loyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? ' required' : '' ?> ">
+            <div class="loyalty<?= ($segment_type === 'radio' || $segment_type === 'checkbox') ? ' options' : ''?> field<?= (($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? ' required' : '' ?> ">
                 <label class="label" for="segment_<?= $segment['id'] ?>">
                     <span><?= $segment['text'] ?></span>
                 </label>
                 <div class="control">
                     <?php if($segment_type === "select"){ ?>
-                        <select name="segment_<?= $segment['id'] ?>" id="segment_<?= $segment['id'] ?>" data-validate="{<?= (($loyaltyHelper->loyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? 'required:true' : '' ?>}">
+                        <select name="segment_<?= $segment['id'] ?>" id="segment_<?= $segment['id'] ?>" data-validate="{<?= (($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? 'required:true' : '' ?>}">
                             <option value="">...</option>
                             <?php foreach($segment['options'] as $option ){ ?>
                                 <option value="<?= $option['id'] ?>" <?= ($memberResponse['value'] == $option['id']) ? 'selected' : '' ?>><?= $option['text'] ?></option>
@@ -153,7 +153,7 @@
                                     value="<?= $option['id'] ?>"
                                     title="<?= $option['text'] ?>"
                                     class="input-<?= $segment_type ?>"
-                                    data-validate="{<?= (($loyaltyHelper->loyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? 'required:true' : '' ?>}"
+                                    data-validate="{<?= (($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? 'required:true' : '' ?>}"
                                     <?php if((
                                             $segment_type === 'radio' &&
                                             $memberResponse['value'] == $option['id']
@@ -176,7 +176,7 @@
                                     id="segment_<?= $segment['id'] ?>"
                                     data-input name="segment_<?= $segment['id'] ?>"
                                     placeholder="Select <?= $segment['text'] ?>... (dd-mm-yyyy)"
-                                    data-validate="{<?= (($loyaltyHelper->loyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? 'required:true' : '' ?>}"
+                                    data-validate="{<?= (($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? 'required:true' : '' ?>}"
                                     value="<?= $memberResponse['value'] ? date("Y-m-d", strtotime($memberResponse['value'])) : '' ?>">
                             <a class="calendar-button" title="toggle" data-toggle></a>
                         </div>
@@ -189,7 +189,7 @@
                                     class="input-<?= $segment_type ?>"
                                     name="segment_<?= $segment['id'] ?>"
                                     value="<?= $memberResponse['value'] ?? '' ?>"
-                                    data-validate="{<?= (($loyaltyHelper->loyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? 'required:true' : '' ?>}">
+                                    data-validate="{<?= (($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? 'required:true' : '' ?>}">
                         </div>
                     <?php } ?>
                 </div>
@@ -214,7 +214,7 @@
         </div>
     <?php } ?>
 
-    <div class="loyalty options field <?= ($loyaltyHelper->loyaltyFieldsMandatory() || $is_member) ? 'required' : '' ?>">
+    <div class="loyalty options field <?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? 'required' : '' ?>">
         <label class="label">
             <span>Marketing Consent</span>
         </label>
@@ -224,11 +224,11 @@
                        name="loyalty_consent"
                        id="loyalty_consent"
                        class="checkbox"
-                       data-validate="{<?= ($loyaltyHelper->loyaltyFieldsMandatory() || $is_member) ? 'required:true' : '' ?>}"
+                       data-validate="{<?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? 'required:true' : '' ?>}"
                     <?= $is_member ? ($member->getConsent()->getGDPRAccepted() ? 'checked' : '') : '' ?>
                 >
                 <label for="loyalty_consent" class="label">
-                    <span>I want to join <?= $loyaltyDetails['storeName'] ?>'s loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like. Read our <a target="_blank" href="<?= $loyaltyDetails["privacyPolicyUrl"] ?>">privacy policy here</a> <?= ($loyaltyHelper->loyaltyFieldsMandatory() || $is_member) ? '*' : '' ?></span>
+                    <span>I want to join <?= $loyaltyDetails['storeName'] ?>'s loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like. Read our <a target="_blank" href="<?= $loyaltyDetails["privacyPolicyUrl"] ?>">privacy policy here</a> <?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? '*' : '' ?></span>
                 </label>
             </div>
             <div class="option">

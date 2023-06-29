@@ -83,7 +83,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
         // get customer object
         if(!($customer = $event->getData('customer_data_object'))){
             return true;
-        };
+        }
 
         // Get observer parameters
         $params = $this->request->getParams();
@@ -153,16 +153,17 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                 ),
                 "consent" => array(
                     "gdpr_accepted" => true,
-                    "receive_sms" => true,
-                    "receive_email" => true,
-                    "save_order_history" => $params['loyalty_consent_order_history'] === 'on'
+                    "receive_sms" => false,
+                    "receive_email" => false,
+                    "save_order_history" => false
                 ),
                 "department_ids" => $params['department'] ?? [],
                 "segments" => $member_segments
             );
 
-            if(array_key_exists('loyalty_consent_sms', $params)) $member_object["consent"]["receive_sms"] = $params['loyalty_consent_sms'] === 'on';
-            if(array_key_exists('loyalty_consent_email', $params)) $member_object["consent"]["receive_email"] = $params['loyalty_consent_email'] === 'on';
+            if(array_key_exists('loyalty_consent_sms', $params)) $member_object["consent"]["receive_sms"] = true;
+            if(array_key_exists('loyalty_consent_email', $params)) $member_object["consent"]["receive_email"] = true;
+            if(array_key_exists('loyalty_consent_order_history', $params)) $member_object["consent"]["save_order_history"] = true;
             if(array_key_exists('birth_date', $params)) $member_object['birth_date'] = date('Y-m-d', strtotime($params['birth_date']));
             if(array_key_exists('gender', $params)) $member_object['gender'] = $params['gender'];
 
