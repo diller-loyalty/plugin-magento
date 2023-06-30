@@ -78,7 +78,6 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
     public function execute(Observer $observer) {
         $valid_phone_number = $phone_country_code = $phone_national_number = false;
         $event = $observer->getEvent();
-        $country = $this->scopeConfig->getValue('general/country/default', ScopeInterface::SCOPE_WEBSITES);
 
         // get customer object
         if(!($customer = $event->getData('customer_data_object'))){
@@ -87,6 +86,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
 
         // Get observer parameters
         $params = $this->request->getParams();
+        $country = isset($params['country_code']) ? $params['country_code'] : '';
 
         // Get chosen segments and prepare them
         $params_segments = array_filter(
@@ -108,7 +108,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
             try {
                 if(($phone_number_proto = PhoneNumberUtil::getInstance()->parse($phone, '')) && PhoneNumberUtil::getInstance()->isValidNumber($phone_number_proto)) {
                     $phone_national_number = $phone_number_proto->getNationalNumber();
-                    $country = isset($params['country_code']) ? $country : PhoneNumberUtil::getInstance()->getRegionCodeForNumber($phone_number_proto);
+                    $country = !empty($country) ? $country : PhoneNumberUtil::getInstance()->getRegionCodeForNumber($phone_number_proto);
                     $valid_phone_number = true;
 
                     // check if customer is a Diller member
@@ -172,7 +172,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                 "city"         => !empty($params['city']) ? $params['city'] : "",
                 "zip_code"     => !empty($params['zip_code']) ? $params['zip_code'] : "",
                 "state"        => !empty($params['state']) ? $params['state'] : "",
-                "country_code" => $country
+                "country_code" => strtoupper($country),
             );
 
             // register member in Diller
@@ -193,22 +193,6 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                     return false;
                 }
             }
-        }
-
-        // save customer attribute with Diller member ID
-        if(isset($member['id'])){
-            $customer = $this->customer->load($customer->getID());
-            $customerData = $customer->getDataModel();
-            $customerData->setCustomAttribute('diller_member_id',(string)$member['id'] ?? '');
-            $customer->updateData($customerData);
-            $customerResource = $this->customerFactory->create();
-            $customerResource->saveAttribute($customer, 'diller_member_id');
-
-//            TODO: Replace above code obsolete code with this simplified version, but remember that this will trigger "customer_save_after_data_object"
-//            in a loop, so we might need to move this observer into the frontend, rather globally
-//            $customer = $this->customerRepository->getById($customer->getID());
-//            $customer->setCustomAttribute('diller_member_id', (string)$member['id'] ?? '');
-//            $result = $this->customerRepository->save($customer);
         }
 
         return true;

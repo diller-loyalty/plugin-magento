@@ -33,7 +33,7 @@
             <span><?= $block->escapeHtml(__('Birthdate')) ?></span>
         </label>
         <div class="control flatpickr">
-            <input type="text" placeholder="Select Date... (dd-mm-yyyy)" data-input name="birth_date" id="birth_date" value="<?= $is_member ? (($member->getBirthDate() != null) ?? date_format($member->getBirthDate(),"Y-m-d")) : '' ?>" title="<?= $block->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
+            <input type="text" placeholder="Select Date... (dd-mm-yyyy)" data-input name="birth_date" id="birth_date" value="<?= $is_member ? (($member->getBirthDate() != null) ? date_format($member->getBirthDate(),"d-m-Y") : '') : '' ?>" title="<?= $block->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
             <a class="calendar-button" title="toggle" data-toggle></a>
         </div>
     </div>
@@ -356,8 +356,7 @@
     require(['jquery','flatpicker'],function($){
         $(window).on('load', function() {
             flatpickr(".flatpickr", {
-                altFormat: "d-m-Y",
-                altInput: true,
+                dateFormat: "d-m-Y",
                 allowInput: true,
                 allowInvalidPreload: true,
                 clickOpens: false,

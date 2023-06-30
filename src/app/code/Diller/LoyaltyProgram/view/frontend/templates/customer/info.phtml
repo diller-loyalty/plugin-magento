@@ -42,8 +42,7 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
                 <li><strong>Phone number</strong> <?= $member->getPhone()->getCountryCode() ?> <?= $member->getPhone()->getNumber() ?></li>
                 <li><strong>Email</strong> <?= $member->getEmail() ?></li>
                 <li><strong>Gender</strong> <?= $gender ?? '' ?></li>
-                <li><strong>Address</strong> <?= $member->getAddress()->getStreet() ?><br><?= $member->getAddress()->getZipCode() ?> <?= $member->getAddress()->getCity() ?> - <?= $member->getAddress()->getCountryCode() ?>
-                </li>
+                <li><strong>Address</strong> <?= $member->getAddress()->getStreet() ?><br><?= $member->getAddress()->getZipCode() ?> <?= $member->getAddress()->getCity() ?> - <?= $member->getAddress()->getCountryCode() ?></li>
                 <li><strong>Birthdate</strong> <?= ($member->getBirthDate() != null) ? date_format($member->getBirthDate(),"d-m-Y") : 'N/A' ?></li>
                 <li><strong>Marketing consent</strong>
                     <ul>

@@ -2,28 +2,36 @@
 
 namespace Diller\LoyaltyProgram\Helper;
 
-use DillerAPI\ApiException;
 use DillerAPI\DillerAPI;
+use DillerAPI\ApiException;
 use DillerAPI\Configuration;
+
+use DillerAPI\Model\StoreResponse;
+use DillerAPI\Model\StampReservationRequest;
 use DillerAPI\Model\CouponReservationRequest;
 
-use DillerAPI\Model\StampReservationRequest;
-use DillerAPI\Model\StoreResponse;
-use Magento\Framework\Api\Filter;
-use Magento\Store\Model\ScopeInterface;
-use Magento\Framework\App\Helper\Context;
-use Magento\SalesRule\Model\RuleRepository;
-use Magento\Framework\ObjectManagerInterface;
-use Magento\Quote\Api\CartRepositoryInterface;
-use Magento\Framework\App\Helper\AbstractHelper;
-use Magento\SalesRule\Api\RuleRepositoryInterface;
-use Magento\Framework\Exception\LocalizedException;
 use Magento\Catalog\Api\ProductRepositoryInterface;
+
+use Magento\Store\Model\ScopeInterface;
+use Magento\Quote\Api\CartRepositoryInterface;
+
+use Magento\SalesRule\Model\RuleRepository;
+use Magento\SalesRule\Api\RuleRepositoryInterface;
 use Magento\SalesRule\Api\CouponRepositoryInterface;
-use Magento\Customer\Api\CustomerRepositoryInterface;
+
+use Magento\Framework\Api\Filter;
+use Magento\Framework\App\Helper\Context;
+use Magento\Framework\ObjectManagerInterface;
+use Magento\Framework\App\Helper\AbstractHelper;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Api\Search\SearchCriteriaBuilder;
+
+use Magento\Customer\Model\Customer;
+use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Model\ResourceModel\CustomerFactory;
+
 
 use libphonenumber\PhoneNumberUtil;
 use Exception;
@@ -38,6 +46,8 @@ class Data extends AbstractHelper{
     private DillerAPI $dillerAPI;
     private String $store_uid;
 
+    protected Customer $customer;
+    protected CustomerFactory $customerFactory;
     protected CustomerRepositoryInterface $customerRepository;
 
     protected ProductRepositoryInterface $productRepository;
@@ -48,6 +58,8 @@ class Data extends AbstractHelper{
     /**
      * @param Context $context
      * @param ScopeConfigInterface $scopeConfig
+     * @param Customer $customer
+     * @param CustomerFactory $customerFactory
      * @param CustomerRepositoryInterface $customerRepository
      * @param ProductRepositoryInterface $productRepository
      * @param RuleRepository $ruleRepository
@@ -56,11 +68,15 @@ class Data extends AbstractHelper{
     public function __construct(
         Context $context,
         ScopeConfigInterface $scopeConfig,
+        Customer $customer,
+        CustomerFactory $customerFactory,
         CustomerRepositoryInterface $customerRepository,
         ProductRepositoryInterface $productRepository,
         RuleRepository $ruleRepository,
         ObjectManagerInterface $_objectManager) {
         $this->scopeConfig = $scopeConfig;
+        $this->customer = $customer;
+        $this->customerFactory = $customerFactory;
         $this->customerRepository = $customerRepository;
         $this->productRepository = $productRepository;
         $this->ruleRepository = $ruleRepository;
@@ -267,8 +283,7 @@ class Data extends AbstractHelper{
         try {
             $customer = $this->customerRepository->getById($id);
         }
-        catch (NoSuchEntityException $ex){
-        }
+        catch (NoSuchEntityException $ex){}
 
         if($customer){
             // search member with diller_member_id customer attribute
@@ -281,6 +296,7 @@ class Data extends AbstractHelper{
             if($customer_phone_number = $this->getCustomerPhoneNumber($id)){
                 $result = $this->getMember('', $customer_phone_number['country_code'].$customer_phone_number['national_number']);
                 if(!empty($result)){
+                    $this->addMemberIdToCustomer($id, $result[0]->getID());
                     return $result[0];
                 }
             }
@@ -288,6 +304,7 @@ class Data extends AbstractHelper{
             // search member by customer email
             $result = $this->getMember($customer->getEmail());
             if(!empty($result)){
+                $this->addMemberIdToCustomer($id, $result[0]->getID());
                 return $result[0];
             }
         }
@@ -357,6 +374,97 @@ class Data extends AbstractHelper{
         return false;
     }
 
+
+    public function validateOrderCoupons($member_id, $coupon, $products): array
+    {
+        if($member_coupon = $this->validateMemberCoupon($member_id, $coupon)) {
+            if ($member_coupon->getIsOk()) {
+                return array("coupons" => [$coupon], "stamp_cards" => []);
+            }
+        }
+
+        // check if this coupon matches a stamp card price rule
+        $stamp_card_found = false;
+        $validated_stamp_cards = [];
+        if($price_rule = $this->getPriceRule('', '', $coupon)){
+            foreach ($this->getMemberStampCards($member_id) as $stamp_card) {
+                if ($price_rule->getRuleId() == $stamp_card->getExternalId() || $price_rule->getName() == 'Stamp Card - ' . $stamp_card->getTitle()) {
+                    $stamp_card_found = $stamp_card;
+                }
+            }
+            if($stamp_card_found){
+                $stamps = 0;
+                foreach ($products as $product){
+                    if($product->getAdditionalData() === 'eligible_to_stamp_card_discount'){
+                        $product_qty = 0;
+                        if(method_exists($product, "getQty")) $product_qty = $product->getQty();
+                        if(array_key_exists("qty_ordered", $product->getData()) && $product_qty == 0) $product_qty = $product->getData("qty_ordered");
+                        $stamps += $product_qty;
+                    }
+                }
+                if($stamps > 0){
+                    $validated_stamp_cards = array_fill(0, $stamps, $stamp_card_found->getId());
+                }
+            }
+        }
+        return array("coupons" => [], "stamp_cards" => $validated_stamp_cards);
+    }
+
+    public function getPriceRuleStoreCoupon(int $rule_id, string $rule_name, string $rule_coupon_code){
+        $coupons = $this->getStoreCoupons();
+        if(empty($coupons)) return false;
+
+        foreach ($coupons as $coupon){
+            foreach ($coupon->getExternalIds() as $external_id){
+                if($rule_id === $external_id || $rule_name == $coupon->getTitle() || $rule_coupon_code == $coupon->getCode()){
+                    return $coupon;
+                }
+            }
+        }
+        return false;
+    }
+
+    public function cleanCartPriceRules($quote, $cleanCoupons): void
+    {
+        $rule_id = $quote->getData("applied_rule_ids");
+        $coupon_code = $quote->getCouponCode();
+
+        $removePriceRule = false;
+
+        /** @var \Diller\LoyaltyProgram\Override\Model\SalesRule\Rule $price_rule */
+        if($price_rule = $this->getPriceRule($rule_id, '', $coupon_code)){
+            if($price_rule->getSimpleAction() === 'loyalty_stamp_card'){
+                $removePriceRule = true;
+
+                // remove "eligible_to_stamp_card_discount" from cart products
+                $cart_items = $quote->getData('items');
+                if(!empty($cart_items)){
+                    foreach ($cart_items as $cart_item) {
+                        $cart_item['additional_data'] = "";
+                    }
+                }
+            }
+
+            if($cleanCoupons){
+                if($loyalty_coupon = $this->getPriceRuleStoreCoupon($price_rule->getRuleId(), $price_rule->getName(), $price_rule->getCouponCode())){
+                    if($loyalty_coupon->getType() != "Public"){
+                        $removePriceRule = true;
+                    }
+                }
+            }
+        }
+
+        if($removePriceRule){
+            $quote
+                ->setData("applied_rule_ids", '')
+                ->setCouponCode('')
+                ->collectTotals()
+                ->save();
+        }
+    }
+
+
+    // Magento price rules
     public function getPriceRule($id, $name = '', $promo_code = ''){
         if(!empty($id)){
             try {
@@ -423,89 +531,13 @@ class Data extends AbstractHelper{
         return false;
     }
 
-    public function validateOrderCoupons($member_id, $coupon, $products){
-        if($member_coupon = $this->validateMemberCoupon($member_id, $coupon)) {
-            if ($member_coupon->getIsOk()) {
-                return array("coupons" => [$coupon], "stamp_cards" => []);
-            }
-        }
-
-        // check if this coupon matches a stamp card price rule
-        $stamp_card_found = false;
-        $validated_stamp_cards = [];
-        if($price_rule = $this->getPriceRule('', '', $coupon)){
-            foreach ($this->getMemberStampCards($member_id) as $stamp_card) {
-                if ($price_rule->getRuleId() == $stamp_card->getExternalId() || $price_rule->getName() == 'Stamp Card - ' . $stamp_card->getTitle()) {
-                    $stamp_card_found = $stamp_card;
-                }
-            }
-            if($stamp_card_found){
-                $stamps = 0;
-                foreach ($products as $product){
-                    if($product->getAdditionalData() === 'eligible_to_stamp_card_discount'){
-                        $product_qty = 0;
-                        if(method_exists($product, "getQty")) $product_qty = $product->getQty();
-                        if(array_key_exists("qty_ordered", $product->getData()) && $product_qty == 0) $product_qty = $product->getData("qty_ordered");
-                        $stamps += $product_qty;
-                    }
-                }
-                if($stamps > 0){
-                    $validated_stamp_cards = array_fill(0, $stamps, $stamp_card_found->getId());
-                }
-            }
-        }
-        return array("coupons" => [], "stamp_cards" => $validated_stamp_cards);
-    }
-
-    public function getPriceRuleStoreCoupon(int $rule_id, string $rule_name, string $rule_coupon_code){
-        $coupons = $this->getStoreCoupons();
-        if(empty($coupons)) return false;
-
-        foreach ($coupons as $coupon){
-            foreach ($coupon->getExternalIds() as $external_id){
-                if($rule_id === $external_id || $rule_name == $coupon->getTitle() || $rule_coupon_code == $coupon->getCode()){
-                    return $coupon;
-                }
-            }
-        }
-        return false;
-    }
-
-    public function cleanCartPriceRules($quote, $cleanCoupons){
-        $rule_id = $quote->getData("applied_rule_ids");
-        $coupon_code = $quote->getCouponCode();
-
-        $removePriceRule = false;
-
-        /** @var \Diller\LoyaltyProgram\Override\Model\SalesRule\Rule $price_rule */
-        if($price_rule = $this->getPriceRule($rule_id, '', $coupon_code)){
-            if($price_rule->getSimpleAction() === 'loyalty_stamp_card'){
-                $removePriceRule = true;
-
-                // remove "eligible_to_stamp_card_discount" from cart products
-                $cart_items = $quote->getData('items');
-                if(!empty($cart_items)){
-                    foreach ($cart_items as $cart_item) {
-                        $cart_item['additional_data'] = "";
-                    }
-                }
-            }
-
-            if($cleanCoupons){
-                if($loyalty_coupon = $this->getPriceRuleStoreCoupon($price_rule->getRuleId(), $price_rule->getName(), $price_rule->getCouponCode())){
-                    if($loyalty_coupon->getType() != "Public"){
-                        $removePriceRule = true;
-                    }
-                }
-            }
-        }
-
-        if($removePriceRule){
-            $quote
-                ->setData("applied_rule_ids", '')
-                ->setCouponCode('')
-                ->collectTotals()
-                ->save();
+    public function addMemberIdToCustomer($customer_id, $member_id){
+        if($customer = $this->customer->load($customer_id)){
+            $customerData = $customer->getDataModel();
+            $customerData->setCustomAttribute('diller_member_id',$member_id);
+            $customer->updateData($customerData);
+            $customerResource = $this->customerFactory->create();
+            $customerResource->saveAttribute($customer, 'diller_member_id');
         }
     }
 }

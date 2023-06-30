@@ -27,21 +27,27 @@ if($customer = $block->getCustomer()){
         }
     }
 }
+
+// store details
+$loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 ?>
 <?php if($is_member && !empty($valid_stamp_cards)) { ?>
     <div class="diller-container stamp-cards">
-        <h2 class="page-title">
-            <span class="base" data-ui-id="page-title-wrapper">Stamp Cards</span>
-        </h2>
+        <h3 class="page-title">
+            <span id="diller-stamp-cards-container-title-cart" style="display:none" class="base" data-ui-id="page-title-wrapper"><b><?= $loyaltyDetails['storeName'] ?></b> stamp cards</span>
+            <span id="diller-stamp-cards-container-title-loyalty-page" class="base" data-ui-id="page-title-wrapper">Stamp Cards</span>
+        </h3>
         <hr>
-        <?php foreach ($valid_stamp_cards as $stamp_card) { ?>
+
+
+        <?php
+            foreach ($valid_stamp_cards as $stamp_card) { ?>
             <div class="stamp-card id_<?= $stamp_card->getId() ?>">
                 <h3><?= $stamp_card->getTitle() ?></h3>
                 <p><?= $stamp_card->getDescription() ?> (<?=$stamp_card->getStampsCollected() ?>/<?=$stamp_card->getRequiredStamps() ?>)</p>
                 <div class="stamps">
                     <?php for ($x = 1; $x <= $stamp_card->getRequiredStamps(); $x++) { ?>
-                        <div class="stamp <?= $stamp_card->getStampsCollected() >= $x ? 'collected' : '' ?>">
-                        </div>
+                        <div class="stamp <?= $stamp_card->getStampsCollected() >= $x ? 'collected' : '' ?>" <?= $x == $stamp_card->getRequiredStamps() ? 'title="'.$stamp_card->getLastStampText().'"' : '' ?>></div>
                     <?php } ?>
                 </div>
                 <div class="products">
@@ -61,6 +67,17 @@ if($customer = $block->getCustomer()){
         <?php } ?>
     </div>
     <style>
+        body.checkout-cart-index span#diller-stamp-cards-container-title-cart{
+            display: block !important;
+        }
+        body.checkout-cart-index #diller-stamp-cards-container-title-loyalty-page{
+            display: none;
+        }
+        .diller-container.stamp-cards{
+            float:left;
+            width: 100%;
+        }
+
         .stamp-card {
             margin: 0 0 40px;
             float: left;
@@ -101,10 +118,14 @@ if($customer = $block->getCustomer()){
             border-color: #90b3c7;
             opacity: 1;
         }
+        .stamp-card .products{
+            margin:20px 0 0 0;
+        }
         .stamp-card .products ul{
             list-style: initial;
             padding: 0 0 0 30px;
             display: inline-grid;
+            margin:0;
         }
         .stamp-card .products ul li{
             margin: 0 0 5px;

@@ -3,13 +3,15 @@
     namespace Diller\LoyaltyProgram\Observer;
 
     use Diller\LoyaltyProgram\Helper\Data;
-    use Magento\Customer\Api\CustomerRepositoryInterface;
+
     use Magento\Customer\Model\Customer;
+    use Magento\Customer\Api\CustomerRepositoryInterface;
     use Magento\Customer\Model\ResourceModel\CustomerFactory;
+
+    use Magento\Framework\Registry;
     use Magento\Framework\App\RequestInterface;
     use Magento\Framework\Event\ObserverInterface;
     use Magento\Framework\Event\Observer as EventObserver;
-    use Magento\Framework\Registry;
 
     class GetCustomerConsentAndRegisterMemberOnCheckoutSubmitBefore implements ObserverInterface{
         protected $request;
@@ -111,13 +113,7 @@
                     $order->setData('diller_member_id', $member->getId());
                     $is_member = true;
                     if($customer_id = $order->getCustomerId()){
-                        if($customer = $this->customer->load($customer_id)){
-                            $customerData = $customer->getDataModel();
-                            $customerData->setCustomAttribute('diller_member_id',(string)$member['id'] ?? '');
-                            $customer->updateData($customerData);
-                            $customerResource = $this->customerFactory->create();
-                            $customerResource->saveAttribute($customer, 'diller_member_id');
-                        }
+                        $this->loyaltyHelper->addMemberIdToCustomer($customer_id, $member->getId());
                     }
                 }
             }
