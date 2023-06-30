@@ -8,7 +8,10 @@ $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 $is_member = false;
 if($customer = $block->getCustomer()){
     $valid_stamp_cards = $stamp_cards = [];
-    $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
+    $member = $loyaltyHelper->searchMemberByCustomerId($customer->getId());
+    if($member){
+        $is_member = $member->getConsent()->getGdprAccepted();
+    }
     if($is_member && $stamp_cards = $block->getMemberStampCards($member['id'])){
         foreach ($stamp_cards as $stamp_card) {
             $price_rule = $loyaltyHelper->getPriceRule($stamp_card->getExternalId(), "Stamp Card - " . $stamp_card->getTitle());

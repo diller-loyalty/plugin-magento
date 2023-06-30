@@ -11,7 +11,10 @@ $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 // member details
 $is_member = false;
 if($customer = $block->getCustomer()){
-    $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
+    $member = $loyaltyHelper->searchMemberByCustomerId($customer->getId());
+    if($member){
+        $is_member = $member->getConsent()->getGdprAccepted();
+    }
 }
 
 // store details

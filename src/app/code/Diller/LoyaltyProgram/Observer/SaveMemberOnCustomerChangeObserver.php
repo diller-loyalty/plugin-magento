@@ -121,8 +121,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
             catch (\Exception $ex){}
         }
 
-        // check loyalty consent
-        if($params['loyalty_consent'] === 'on' && ($is_member || $valid_phone_number)){
+        if($is_member || $valid_phone_number){
             $member_segments = [];
             foreach ($this->loyaltyHelper->getStoreSegments() as $storeSegment){
                 if(isset($params_segments['segment_'.$storeSegment['id']]) && !empty($params_segments['segment_'.$storeSegment['id']])){
@@ -152,7 +151,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                     "number" => $phone_national_number
                 ),
                 "consent" => array(
-                    "gdpr_accepted" => true,
+                    "gdpr_accepted" => false,
                     "receive_sms" => false,
                     "receive_email" => false,
                     "save_order_history" => false
@@ -161,6 +160,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                 "segments" => $member_segments
             );
 
+            if(array_key_exists('loyalty_consent', $params)) $member_object["consent"]["gdpr_accepted"] = true;
             if(array_key_exists('loyalty_consent_sms', $params)) $member_object["consent"]["receive_sms"] = true;
             if(array_key_exists('loyalty_consent_email', $params)) $member_object["consent"]["receive_email"] = true;
             if(array_key_exists('loyalty_consent_order_history', $params)) $member_object["consent"]["save_order_history"] = true;
@@ -185,9 +185,13 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                 }
             }
             else{
-                // update member
+                // update/delete member
                 try {
-                    $member = $this->loyaltyHelper->updateMember($member['id'], json_encode($member_object));
+                    if($this->loyaltyHelper->updateMember($member['id'], json_encode($member_object))) return true;
+                    if(!$member_object['consent']['gdpr_accepted']){
+                        if($this->loyaltyHelper->deleteMember($member['id'])) return true;
+                    }
+
                 }
                 catch (\DillerAPI\ApiException $e){
                     return false;

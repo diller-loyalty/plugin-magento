@@ -262,6 +262,14 @@ class Data extends AbstractHelper{
             return false;
         }
     }
+    public function deleteMember($member_id){
+        try {
+            return $this->dillerAPI->Members->deleteMember($this->store_uid, $member_id);
+        }
+        catch (Exception $ex){
+            return false;
+        }
+    }
 
     public function createTransaction($member_id, $data){
         try {
@@ -288,6 +296,7 @@ class Data extends AbstractHelper{
         if($customer){
             // search member with diller_member_id customer attribute
             if($attribute = $customer->getCustomAttribute('diller_member_id')){
+
                 if($member = $this->getMemberById($attribute->getValue())){
                     return $member;
                 }

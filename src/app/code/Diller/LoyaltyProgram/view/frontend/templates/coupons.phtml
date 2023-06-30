@@ -8,7 +8,10 @@ $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 $is_member = false;
 $valid_coupons = [];
 if($customer = $block->getCustomer()){
-    $is_member = ($member = $loyaltyHelper->searchMemberByCustomerId($customer->getId()));
+    $member = $loyaltyHelper->searchMemberByCustomerId($customer->getId());
+    if($member){
+        $is_member = $member->getConsent()->getGdprAccepted();
+    }
     if($is_member && $coupons = $block->getMemberCoupons($member['id'])){
         foreach ($coupons as $coupon) {
             foreach ($coupon->getExternalIds() as $price_rule_id){
