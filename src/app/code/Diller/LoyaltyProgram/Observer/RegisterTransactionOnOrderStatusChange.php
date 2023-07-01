@@ -87,7 +87,6 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
 
                 $orderCreatedAt = $this->timezone->date(new \DateTime($order->getCreatedAt()));
                 $transaction = array(
-                    // TODO: prepend the magento id or something
                     "external_id" => "magento_#" . $order->getId(),
                     "created_at" => $orderCreatedAt->format(DATE_ATOM),
                     "payment_details" => array(
@@ -106,14 +105,23 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
                     "total_tax" => $order->getTaxAmount(),
                     "total_discount" => $order->getDiscountAmount(),
                     "currency" => $order->getOrderCurrency()->getCode(),
-                    "department_id" => $this->loyaltyHelper->getSelectedDepartment(),
-                    "coupon_codes" => [],
-                    "stamp_card_ids" => []
+                    "department_id" => $this->loyaltyHelper->getSelectedDepartment()
                 );
 
+                // Stamp cards price rules
+                $validated_stamp_cards = $this->loyaltyHelper->getPriceRulesForMemberStampCards($member->getId());
+
                 $transaction_products = [];
+                $transaction_stamp_card_ids = [];
                 $order_products = $order->getItems();
                 foreach ($order_products as $product) {
+                    if(!empty($validated_stamp_cards)){
+                        foreach ($validated_stamp_cards as $stamp_card){
+                            if(in_array($product->getSku(), $stamp_card['products'])){
+                                $transaction_stamp_card_ids = array_merge($transaction_stamp_card_ids, array_fill(0, $product->getQtyOrdered(), $stamp_card['id']));
+                            }
+                        }
+                    }
                     $transaction_products[] = array(
                         "product" => array(
                             "external_id" => $product->getProductId(),
@@ -129,17 +137,16 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
                     );
                 }
                 $transaction['details'] = $transaction_products;
+                $transaction["coupon_codes"] = !is_null($order->getCouponCode()) ? [$order->getCouponCode()] : [];
+                $transaction["stamp_card_ids"] = $transaction_stamp_card_ids;
 
-                $order_coupon = $order->getCouponCode();
-                if (!empty($order_coupon)) {
-                    $validated_order_coupons = $this->loyaltyHelper->validateOrderCoupons($member->getId(), $order_coupon, $order_products);
-                    if($validated_order_coupons){
-                        $transaction["coupon_codes"] = $validated_order_coupons["coupons"];
-                        $transaction["stamp_card_ids"] = $validated_order_coupons["stamp_cards"];
-                    }
-                }
                 try {
-                    $this->loyaltyHelper->createTransaction($member->getId(), json_encode($transaction));
+                    print_r(json_encode($transaction));
+                    // TODO: add "transaction_sent_to_diller" flag to order
+                    $transaction = $this->loyaltyHelper->createTransaction($member->getId(), json_encode($transaction));
+
+                    var_dump(json_encode($transaction));
+                    die;
                 } catch (\DillerAPI\ApiException $e) {
                     $error_details = json_decode($e->getResponseBody())->detail;
                 }

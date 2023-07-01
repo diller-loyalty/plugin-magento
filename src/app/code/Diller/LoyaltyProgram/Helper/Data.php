@@ -275,7 +275,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->Transactions->createTransaction($this->store_uid, $member_id, $data);
         }
-        catch (Exception $ex){
+        catch (\DillerAPI\ApiException $ex){
             return false;
         }
     }
@@ -548,5 +548,27 @@ class Data extends AbstractHelper{
             $customerResource = $this->customerFactory->create();
             $customerResource->saveAttribute($customer, 'diller_member_id');
         }
+    }
+
+    public function getPriceRulesForMemberStampCards($member_id): array
+    {
+        $validated_stamp_cards = [];
+        $stamp_cards = $this->getMemberStampCards($member_id);
+        if(empty($stamp_cards)) return $validated_stamp_cards;
+
+        foreach ($stamp_cards as $stamp_card){
+            if($price_rule = $this->getPriceRule($stamp_card->getExternalID(), "Stamp Card - " . $stamp_card->getTitle())){
+                if($price_rule->getSimpleAction() !== 'loyalty_stamp_card') continue;
+
+                $price_rule_conditions = $price_rule->getActionCondition()->getConditions();
+                if(empty($price_rule_conditions)) continue;
+
+                $validated_stamp_cards[] = array(
+                    "id" => $stamp_card->getID(),
+                    "products" => explode(",", $price_rule_conditions[0]->getValue())
+                );
+            }
+        }
+        return $validated_stamp_cards;
     }
 }

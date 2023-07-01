@@ -118,21 +118,37 @@
                 }
             }
 
-            // reserve coupon / stamp card
-            if($is_member && ($order_coupon = $order->getCouponCode())){
-                $validated_order_coupons = [];
-                if(!empty($order_coupon)){
-                    $validated_order_coupons = $this->loyaltyHelper->validateOrderCoupons($member->getId(), $order_coupon, $quote->getItems());
-                }
-                if(!empty(($validated_order_coupons))){
-                    foreach ($validated_order_coupons["coupons"] as $coupon) {
-                        $this->loyaltyHelper->reserveMemberCoupon($member->getId(), $coupon, $order->getId());
-                    }
-                    foreach ($validated_order_coupons["stamp_cards"] as $stamp_card) {
-                        $this->loyaltyHelper->reserveMemberStampCard($member->getId(), $stamp_card, $order->getId());
+            // reserve coupon
+            if($is_member && ($coupon = $order->getCouponCode())){
+                if(!empty($coupon)){
+                    if($member_coupon = $this->loyaltyHelper->validateMemberCoupon($member->getId(), $coupon)) {
+                        if ($member_coupon->getIsOk()) {
+                            $this->loyaltyHelper->reserveMemberCoupon($member->getId(), $coupon, $order->getId());
+                        }
                     }
                 }
             }
+
+            // reserve stamp cards
+            $validated_stamp_cards = $this->loyaltyHelper->getPriceRulesForMemberStampCards($member->getId());
+            $cart_items = $quote->getItems();
+            $order_stamp_card_ids = [];
+            if(empty($cart_items)) return true;
+            foreach ($cart_items as $cart_item) {
+                if(empty($validated_stamp_cards)) return true;
+                foreach ($validated_stamp_cards as $stamp_card){
+                    if(in_array($cart_item->getSku(), $stamp_card['products'])){
+                        $order_stamp_card_ids = array_merge($order_stamp_card_ids, array_fill(0, $cart_item->getQty(), $stamp_card['id']));
+                    }
+                }
+            }
+
+            if(empty($order_stamp_card_ids)) return true;
+            foreach ($order_stamp_card_ids as $stamp_card) {
+                // TODO: validate quote id vs order id
+                $this->loyaltyHelper->reserveMemberStampCard($member->getId(), $stamp_card, $quote->getId());
+            }
+
             return true;
         }
     }
