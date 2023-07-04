@@ -141,12 +141,8 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
                 $transaction["stamp_card_ids"] = $transaction_stamp_card_ids;
 
                 try {
-                    print_r(json_encode($transaction));
                     // TODO: add "transaction_sent_to_diller" flag to order
                     $transaction = $this->loyaltyHelper->createTransaction($member->getId(), json_encode($transaction));
-
-                    var_dump(json_encode($transaction));
-                    die;
                 } catch (\DillerAPI\ApiException $e) {
                     $error_details = json_decode($e->getResponseBody())->detail;
                 }

@@ -86,77 +86,137 @@ class ValidateCouponsAndStampCardsOnCartUpdate implements ObserverInterface{
             }
         }
 
-        // get cart items
-        $cart_items = $quote->getData('items');
-        if(empty($cart_items) && method_exists($observer->getEvent(), "getCart")) $cart_items = $observer->getEvent()->getCart()->getItems()->getData();
-        if(empty($cart_items)) return true;
-
         if(!($customer = $quote->getCustomer())) return true;
 
-        // get member
+        // Get Diller member
         if(!($member = $this->loyaltyHelper->searchMemberByCustomerId($customer->getId()))){
             $this->loyaltyHelper->cleanCartPriceRules($quote, true);
             return true;
         }
 
-        // remove stamp card rules from cart
+        // Remove stamp card rules from cart
         $this->loyaltyHelper->cleanCartPriceRules($quote, false);
 
-        // get member stamp cards
+        // Get member stamp cards
         $stamp_cards = $this->loyaltyHelper->getMemberStampCards($member->getId());
         if(empty($stamp_cards)) return true;
+
+        // Get Magento rules related to the member stamp cards
+        // this will return result in an array with the Magento price rule and the related stamp card
         $stamp_cards_price_rules = [];
-
-        // get stamp cards rules
         foreach ($stamp_cards as $stamp_card){
-            $price_rule = $this->loyaltyHelper->getPriceRule($stamp_card->getExternalId(), "Stamp Card - " . $stamp_card->getTitle());
-
-            if(!$price_rule) continue;
+            if(!$price_rule = $this->loyaltyHelper->getPriceRule($stamp_card->getExternalId(), "Stamp Card - " . $stamp_card->getTitle())) continue;
 
             $stamp_card_rules["price_rule"] = $price_rule;
-            $stamp_card_rules["stamps_to_full"] = $stamp_card->getRequiredStamps() - $stamp_card->getStampsCollected();
+            $stamp_card_rules["stamp_card"] = $stamp_card;
 
             $stamp_cards_price_rules[] = $stamp_card_rules;
         }
 
-        // check all stamp cards price rules and select the ones that matched the cart items
-        // we're updating the quantity field if more than one product matches the same stamp card
-        // we're also saving in the array the "stamps_to_full" in order to validate the free product eligibility in the next step
+        // Get cart items
+        $cart_items = $quote->getData('items');
+        if(empty($cart_items) && method_exists($observer->getEvent(), "getCart")) $cart_items = $observer->getEvent()->getCart()->getItems()->getData();
+        if(empty($cart_items)) return true;
+
+        // Run through all stamp cards price rules and select the ones that are eligible with the cart items
+        // this will result in an array with the applicable price rules. Each one of them will have the following information
+        // - Magento price rule
+        // - Diller stamp card id
+        // - Total of stamps to add
+        // - Discounts (array) will have all the discounts that this stamp will offer, with the product SKU as key and the discount as value
+        // -- we need to save this as an array for the cases where there are more than one free product unit and that can happen with 2 or more different products
+        // - Eligible products (array) with only the eligible products SKU. Used for easier comparison a few steps ahead
+        // - Total discount that we'll need to make sure we set the lowest offer if a member has access to more than one stamp card in the same cart
         if(empty($stamp_cards_price_rules)) return true;
         $applicable_price_rules = [];
         foreach ($stamp_cards_price_rules as $stamp_card_rule){
-            $applicable_rule = $applicable_price_rules[$stamp_card_rule["price_rule"]->getRuleId()] ?? array("price_rule" => 0, "quantity" => 0, "discount" => 0, "stamps_to_full" => 0);
+            $applicable_rule = $applicable_price_rules[$stamp_card_rule["price_rule"]->getRuleId()] ?? array(
+                "price_rule" => 0,
+                "stamp_card_id" => 0,
+                "stamps" => 0,
+                "discounts" => [],
+                "eligible_products" => [],
+                "total_discount" => 0
+            );
+
+            // Get product details
+            // run through the cart items and match that with the price rules details
+            // the array $stamp_card_products will be populated with the product sku, it's quantity and the unit price. This will be used in the next step to calculate the stamp card discounts
+            $stamp_card_products = $eligible_products = [];
             $conditions = $stamp_card_rule["price_rule"]->getActionCondition()->getConditions();
+            $price_rule_products = explode(",", $conditions[0]->getValue());
             foreach ($cart_items as $cart_item){
-                $cart_item['additional_data'] = null;
-                if(in_array($cart_item['sku'], explode(",", $conditions[0]->getValue()))){
-                    $cart_item['additional_data'] = "eligible_to_stamp_card_discount";
+                if(in_array($cart_item['sku'], $price_rule_products)){
+                    $stamp_card_products[] = array("sku" => $cart_item['sku'], "qty" => $cart_item['qty'], "price" => $cart_item['price']);
+                    $eligible_products[] = $cart_item['sku'];
                     $applicable_rule['price_rule'] = $stamp_card_rule["price_rule"];
-                    $applicable_rule['quantity'] += $cart_item['qty'];
-                    $applicable_rule['stamps_to_full'] = $stamp_card_rule["stamps_to_full"];
+                    $applicable_rule['stamps'] += $cart_item['qty'];
+                }
+            }
+            $applicable_rule['eligible_products'] = $eligible_products;
 
-                    if($applicable_rule['discount'] == 0) $applicable_rule['discount'] = $cart_item['price'];
+            // sort product array in an ascending price order and check if the stamps are enough to a free product
+            if(!empty($stamp_card_products) && count($stamp_card_products) > 1){
+                usort($stamp_card_products, fn($a, $b) => (int) ($a['price'] > $b['price']));
+            }
 
-                    if($applicable_rule['discount'] > $cart_item['price']){
-                        $applicable_rule['discount'] = $cart_item['price'];
+            // calculate discounts
+            $discounts = [];
+            $total_discount = 0;
+            if(!empty($stamp_card_products)){
+                // check if the stamps are enough to give free products
+                $stamps_to_full = $stamp_card_rule['stamp_card']->getRequiredStamps() - $stamp_card_rule['stamp_card']->getStampsCollected();
+                if($applicable_rule['stamps'] >= $stamps_to_full){
+                    $free_products = 1;
+
+                    // if the stamp card is restartable, check if there is enough stamps to give more free products
+                    if($stamp_card_rule['stamp_card']->getIsRestartable()){
+                        $remaining_stamps = $applicable_rule['stamps'] - $stamps_to_full;
+                        $free_products += floor($remaining_stamps / $stamp_card_rule['stamp_card']->getRequiredStamps());
+                    }
+
+                    for ($i = 0; $i < $free_products; $i++) {
+                        $product = reset($stamp_card_products);
+                        $product_sku = $product['sku'];
+                        $discount = $discounts[$product_sku] ?? 0;
+                        $discount += $product['price'];
+                        $discounts[$product_sku] = $discount;
+
+                        $total_discount += $stamp_card_products[0]['price'];
+
+                        // update product qty for correct future discounts
+                        $stamp_card_products[0]['qty'] -= 1;
+                        if($stamp_card_products[0]['qty'] == 0) array_shift($stamp_card_products);
                     }
                 }
             }
+            $applicable_rule['discounts'] = $discounts;
+            $applicable_rule['total_discount'] = $total_discount;
+
             if(!empty($applicable_rule)) $applicable_price_rules[$stamp_card_rule["price_rule"]->getRuleId()] = $applicable_rule;
         }
 
-        // walk through the applicable price rules and apply the valid one
+        // walk through the applicable price rules and apply the valid and cheapest one
         // when setting the coupon code, the StampCardDiscount.php will be called and the discount will be set based on the cheapest of the eligible products presented in the cart
         if(empty($applicable_price_rules)) return true;
         $discount_given = 0;
         foreach ($applicable_price_rules as $price_rule_data){
-            if($price_rule_data['quantity'] >= $price_rule_data['stamps_to_full']){
-                if($price_rule_data['discount'] > $discount_given && $coupon_code = $this->generateCouponCode($price_rule_data["price_rule"]->getRuleId(), str_replace(["Stamp Card - "," "], "", $price_rule_data["price_rule"]->getName()))){
-                    $discount_given = $price_rule_data['discount'];
+            if(!empty($price_rule_data['discounts'])){
+                if(($discount_given == 0 || ($discount_given > 0 && $price_rule_data['total_discount'] < $discount_given)) &&
+                    $coupon_code = $this->generateCouponCode($price_rule_data["price_rule"]->getRuleId(), str_replace(["Stamp Card - "," "], "", $price_rule_data["price_rule"]->getName()))
+                ){
+                    $discount_given = $price_rule_data['total_discount'];
                     $price_rule_id = $price_rule_data["price_rule"]->getRuleId();
 
-                    $_SESSION["dillerLoyalty_lastCartCheckedTimeStamp"] = time();
+                    foreach ($cart_items as $cart_item){
+                        $cart_item['additional_data'] = null;
+                        if(in_array($cart_item['sku'], $price_rule_data['eligible_products'])){
+                            $cart_item['additional_data'] = json_encode($price_rule_data);
+                        }
+                    }
 
+                    // save timestamp to avoid looping this observer
+                    $_SESSION["dillerLoyalty_lastCartCheckedTimeStamp"] = time();
                     $quote
                         ->setAppliedRuleIds($price_rule_id)
                         ->setCouponCode($coupon_code)

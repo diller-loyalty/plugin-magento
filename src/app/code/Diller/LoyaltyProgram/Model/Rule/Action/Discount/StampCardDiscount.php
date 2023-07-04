@@ -5,7 +5,6 @@ use Magento\SalesRule\Model\Rule;
 use Magento\SalesRule\Model\Validator;
 use Magento\Quote\Model\Quote\Item\AbstractItem;
 use Magento\Framework\Pricing\PriceCurrencyInterface;
-use Magento\SalesRule\Model\Rule\Action\Discount\Data;
 use Magento\SalesRule\Model\Rule\Action\Discount\DataFactory;
 use Magento\SalesRule\Model\Rule\Action\Discount\AbstractDiscount;
 
@@ -16,9 +15,10 @@ class StampCardDiscount extends AbstractDiscount{
 
     public function __construct(
         Validator $validator,
-        DataFactory $discountDataFactory,
+        \Magento\SalesRule\Model\Rule\Action\Discount\DataFactory $discountDataFactory,
         PriceCurrencyInterface $priceCurrency
     ){
+        $this->discountDataFactory = $discountDataFactory;
         parent::__construct($validator, $discountDataFactory, $priceCurrency);
     }
 
@@ -26,9 +26,9 @@ class StampCardDiscount extends AbstractDiscount{
      * @param Rule $rule
      * @param AbstractItem $item
      * @param float $qty
-     * @return Data
+     * @return \Magento\SalesRule\Model\Rule\Action\Discount\Data
      */
-    public function calculate($rule, $item, $qty): Data
+    public function calculate($rule, $item, $qty): \Magento\SalesRule\Model\Rule\Action\Discount\Data
     {
         return $this->_calculateStampCardDiscount($item);
     }
@@ -37,28 +37,23 @@ class StampCardDiscount extends AbstractDiscount{
      * Calculate Stamp card discount amount
      *
      * @param AbstractItem $item
-     * @return Data
+     * @return \Magento\SalesRule\Model\Rule\Action\Discount\Data
      */
-    protected function _calculateStampCardDiscount(AbstractItem $item): Data{
-        /** @var Data $discountData */
-        $discountData = $this->discountFactory->create();
-        $quote = $item->getQuote();
+    protected function _calculateStampCardDiscount(AbstractItem $item): \Magento\SalesRule\Model\Rule\Action\Discount\Data{
+        $discountData = $this->discountDataFactory->create();
 
-        $cartItems = $quote->getItems();
         $discountAmount = 0;
-        $prices = [];
-
-        if(!empty($cartItems)){
-            foreach ($cartItems as $cartItem) {
-                if($cartItem->getAdditionalData() === 'eligible_to_stamp_card_discount'){
-                    $prices[] = $cartItem->getPrice();
+        if(!is_null($item->getData("additional_data"))){
+            $stamp_card_details = json_decode($item->getData("additional_data"), 1);
+            if(is_array($stamp_card_details) && array_key_exists('discounts', $stamp_card_details)){
+                foreach ($stamp_card_details['discounts'] as $item_sku => $discount) {
+                    if($item['sku'] == $item_sku){
+                        $discountAmount = $discount;
+                        continue;
+                    }
                 }
             }
-            if(!empty($prices)) $discountAmount = min($prices);
         }
-
-        $itemPrice = $this->validator->getItemPrice($item);
-        if($itemPrice > $discountAmount) $discountAmount = 0;
 
         $discountData->setAmount($discountAmount);
         $discountData->setBaseAmount($discountAmount);
