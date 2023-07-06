@@ -440,7 +440,6 @@ class Data extends AbstractHelper{
 
         $removePriceRule = false;
 
-        /** @var \Diller\LoyaltyProgram\Override\Model\SalesRule\Rule $price_rule */
         if($price_rule = $this->getPriceRule($rule_id, '', $coupon_code)){
             if($price_rule->getSimpleAction() === 'loyalty_stamp_card'){
                 $removePriceRule = true;
@@ -455,7 +454,7 @@ class Data extends AbstractHelper{
             }
 
             if($cleanCoupons){
-                if($loyalty_coupon = $this->getPriceRuleStoreCoupon($price_rule->getRuleId(), $price_rule->getName(), $price_rule->getCouponCode())){
+                if($loyalty_coupon = $this->getPriceRuleStoreCoupon($price_rule->getRuleId(), $price_rule->getName(), $quote->getCouponCode())){
                     if($loyalty_coupon->getType() != "Public"){
                         $removePriceRule = true;
                     }
@@ -483,7 +482,7 @@ class Data extends AbstractHelper{
 
         if(!empty($name)){
             try {
-                return $this->getPriceRuleByName($name);
+                if($price_rule = $this->getPriceRuleByName($name)) return $price_rule;
             } catch (NoSuchEntityException|LocalizedException $ex) {}
         }
 

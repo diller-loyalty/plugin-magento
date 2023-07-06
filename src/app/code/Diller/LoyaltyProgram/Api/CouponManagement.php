@@ -52,42 +52,37 @@ class CouponManagement {
      * @throws InputException
      */
     public function setCoupon($details){
-        $price_rule = $price_rule_id = false;
-        $website_id = $this->storeManager->getStore()->getId();
-
         // search price rule
-        $price_rule = $this->loyaltyHelper->getPriceRule($details['external_id'] ?? '', $details['promo_code'] ?? '');
+        $price_rule_found = $this->loyaltyHelper->getPriceRule($details['ecommerce_external_id'] ?? '', '', $details['promo_code'] ?? '');
 
         // if a price rule was found and the delete flag sent
-        if($price_rule && (array_key_exists("delete", $details) && $details['delete'])){
-            $price_rule->delete();
+        if(array_key_exists("delete", $details) && $details['delete']){
+            if($price_rule_found) $this->ruleRepository->deleteById($price_rule_found->getRuleId());
             return "Rule deleted";
         }
 
-        // create new price rule
-        if (!$price_rule) $price_rule = $this->ruleFactory->create();
+        // create empty price rule object
+        $price_rule = $this->ruleFactory->create();
 
-        // General rule data
-        $price_rule
-            ->setName($details['title'])
-            ->setDescription($details['coupon_description'])
-            ->setIsAdvanced(true)
-            ->setStopRulesProcessing(true)
-            ->setDiscountQty(1)
-            ->setFromDate($details['start_date'])
-            ->setWebsiteIds([$website_id])
-            ->setCustomerGroupIds(array_keys($this->customerGroupCollection->toOptionArray()))
-            ->setIsRss(false)
-            ->setUsesPerCoupon(100000)
-            ->setUsesPerCustomer($details['can_be_used'])
-            ->setDiscountStep(1)
-            ->setCouponType(2)
-            ->setCouponCode($details['promo_code'])
-            ->setDiscountAmount($details['coupon_type_value'])
-            ->setIsActive(true);
+        // Price rule data
+        $price_rule_data = array(
+            'rule_id' => $price_rule_found ? $price_rule_found->getRuleId() : null,
+            'is_active' => true,
+            'name' => $details['title'],
+            'description' => $details['coupon_description'],
+            'from_date' => $details['start_date'],
+            'website_ids' => [$this->storeManager->getStore()->getId()],
+            'customer_group_ids' => array_keys($this->customerGroupCollection->toOptionArray()),
+            'uses_per_coupon' => 100000,
+            'coupon_type' => 2,
+            'coupon_code' => $details['promo_code'],
+            'discount_amount' => $details['coupon_type_value'],
+            'discount_qty' => 1,
+            'uses_per_customer' => $details['can_be_used']
+        );
 
-        if($details['expire_date'] !== null){
-            $price_rule->setToDate($details['expire_date']);
+        if(array_key_exists("expire_date", $details)){
+            $price_rule_data['to_date'] = $details['expire_date'];
         }
 
         $conditionCombine = null;
@@ -95,7 +90,7 @@ class CouponManagement {
             $price_rule_conditions = $price_rule_product_ids = [];
             foreach (explode(',', $details["product_id"]) as $product_id){
                 try {
-                    $product = $this->productRepository->getById($product_id, false, $website_id);
+                    $product = $this->productRepository->getById($product_id, false, $this->storeManager->getStore()->getId());
 
                     /** @var ConditionInterface $conditionProductId */
                     $conditionProductId = $this->conditionFactory->create();
@@ -125,38 +120,31 @@ class CouponManagement {
                 $conditionCombine->setAggregatorType('all');
                 $conditionCombine->setConditions([$conditionProductFound]);
 
-                $price_rule->setCondition($conditionCombine);
-                $price_rule->setProductIds($price_rule_product_ids);
+                $price_rule['product_ids'] = $price_rule_product_ids;
             }
         }
-        $price_rule->setCondition($conditionCombine);
+        $price_rule['condition'] = $conditionCombine;
 
         switch ($details['coupon_type']){
             case 1:
                 // percent
-                $price_rule->setSimpleAction(RuleInterface::DISCOUNT_ACTION_BY_PERCENT);
+                $price_rule['simple_action'] = RuleInterface::DISCOUNT_ACTION_BY_PERCENT;
                 break;
             case 2:
                 // fixed amount
-                $price_rule->setSimpleAction(RuleInterface::DISCOUNT_ACTION_FIXED_AMOUNT_FOR_CART);
-                if($price_rule->getCondition() !== null){
-                    $price_rule->setSimpleAction(RuleInterface::DISCOUNT_ACTION_FIXED_AMOUNT);
+                $price_rule['simple_action'] = RuleInterface::DISCOUNT_ACTION_FIXED_AMOUNT_FOR_CART;
+                if($price_rule['condition'] !== null){
+                    $price_rule['simple_action'] = RuleInterface::DISCOUNT_ACTION_FIXED_AMOUNT;
                 }
                 break;
             default:
                 // free shipping
         }
 
-        // when updating existing price rules
-        if(method_exists($price_rule, "save")){
-            $save = $price_rule->save();
-            $price_rule_id = $price_rule->getId();
-        }else{ // when creating a new one
-            $save = $this->ruleRepository->save($price_rule);
-            $price_rule_id = $save->getRuleId();
-        }
+        $price_rule->loadPost($price_rule_data);
+        $price_rule->save();
 
-        return $save->getRuleId() ?? false;
+        return $price_rule->getRuleId() ?? false;
     }
 
     public function setStampCard($details){

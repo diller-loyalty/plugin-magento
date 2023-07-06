@@ -10,5 +10,4 @@
     </type>
 
     <preference for="Diller\LoyaltyProgram\Api\CouponManagementInterface" type="Diller\LoyaltyProgram\Api\CouponManagement"/>
-    <preference for="Magento\SalesRule\Model\Data\Rule" type="Diller\LoyaltyProgram\Override\Model\SalesRule\Rule" />
 </config>
