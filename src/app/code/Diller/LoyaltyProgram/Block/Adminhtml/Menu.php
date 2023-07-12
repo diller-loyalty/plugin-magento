@@ -12,18 +12,18 @@ class Menu extends Template {
     /**
      * @var array
      */
-    protected $pool;
+    protected array $pool;
 
     /**
      * @var AbstractMenu
      */
-    protected $activeMenu;
+    protected AbstractMenu $activeMenu;
 
     /**
      * @param Context $context
      * @param array   $menu
      */
-    public function __construct(Context $context, $menu = []) {
+    public function __construct(Context $context, array $menu = []) {
         $this->pool = $menu;
         parent::__construct($context);
     }
@@ -31,7 +31,8 @@ class Menu extends Template {
     /**
      * @return AbstractMenu
      */
-    public function getActiveMenu() {
+    public function getActiveMenu(): AbstractMenu
+    {
         if (!$this->activeMenu) {
             /** @var AbstractMenu $menu */
             foreach ($this->pool as $menu) {
@@ -49,7 +50,7 @@ class Menu extends Template {
     /**
      * @return string
      */
-    public function getActiveTitle()
+    public function getActiveTitle(): string
     {
         if ($this->getActiveMenu()) {
             return $this->getActiveMenu()->getActiveTitle();
@@ -61,7 +62,7 @@ class Menu extends Template {
     /**
      * @return array
      */
-    public function getItems()
+    public function getItems(): array
     {
         if ($this->getActiveMenu()) {
             return $this->getActiveMenu()->getItems();
@@ -74,7 +75,7 @@ class Menu extends Template {
      * @param string $moduleName
      * @return array
      */
-    public function getItemsByModuleName($moduleName)
+    public function getItemsByModuleName(string $moduleName): array
     {
         $classPrefix = str_replace('_', '\\', $moduleName);
 
@@ -91,9 +92,9 @@ class Menu extends Template {
     }
 
     /**
-     * @return string
+     * @return bool|string
      */
-    protected function _toHtml()
+    protected function _toHtml(): bool|string
     {
         if ($this->getActiveMenu()) {
             return parent::_toHtml();

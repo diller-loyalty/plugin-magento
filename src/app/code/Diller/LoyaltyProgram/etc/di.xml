@@ -9,5 +9,6 @@
         </arguments>
     </type>
 
-    <preference for="Diller\LoyaltyProgram\Api\CouponManagementInterface" type="Diller\LoyaltyProgram\Api\CouponManagement"/>
+    <preference for="Diller\LoyaltyProgram\Api\CouponStampCardManagementInterface" type="Diller\LoyaltyProgram\Api\CouponStampCardManagement"/>
+    <preference for="Diller\LoyaltyProgram\Model\CouponStampCardInterface" type="Diller\LoyaltyProgram\Model\CouponStampCard"/>
 </config>

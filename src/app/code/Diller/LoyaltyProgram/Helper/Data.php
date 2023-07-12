@@ -124,7 +124,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->Stores->get($this->store_uid);
         }
-        catch (ApiException $ex){
+        catch (ApiException){
             return false;
         }
     }
@@ -132,7 +132,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->MembershipLevel->getStoreMembershipLevel($this->store_uid);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -158,7 +158,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->Coupons->getStoreCoupons($this->store_uid);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -167,7 +167,7 @@ class Data extends AbstractHelper{
         try {
             return $this->scopeConfig->getValue('dillerloyalty/settings/department', ScopeInterface::SCOPE_STORE);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -175,7 +175,7 @@ class Data extends AbstractHelper{
         try {
             return $this->scopeConfig->getValue('dillerloyalty/settings/transaction_status', ScopeInterface::SCOPE_STORE);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -189,7 +189,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->Members->getMemberById($this->store_uid, $id);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -198,7 +198,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->Members->getMemberByFilter($this->store_uid, $email, $phone);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -206,7 +206,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->Coupons->getMemberCoupons($this->store_uid, $member_id);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -214,7 +214,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->Coupons->validateCoupon($this->store_uid, $member_id, $coupon);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -223,7 +223,7 @@ class Data extends AbstractHelper{
             $reservationRequest = new CouponReservationRequest(array("channel" => "Magento", "externalTransactionId" => $order_id));
             return $this->dillerAPI->Coupons->reserveCoupon($this->store_uid, $member_id, $coupon, $reservationRequest);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -232,7 +232,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->StampCards->getMemberStampCards($this->store_uid, $member_id);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -241,7 +241,7 @@ class Data extends AbstractHelper{
             $reservationRequest = new StampReservationRequest(array("channel" => "Magento", "externalTransactionId" => $order_id));
             return $this->dillerAPI->Coupons->reserveCoupon($this->store_uid, $member_id, $stamp_id, $reservationRequest);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -250,7 +250,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->Members->registerMember($this->store_uid, $data);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -258,7 +258,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->Members->updateMember($this->store_uid, $member_id, $data);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -266,7 +266,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->Members->deleteMember($this->store_uid, $member_id);
         }
-        catch (Exception $ex){
+        catch (Exception){
             return false;
         }
     }
@@ -275,7 +275,7 @@ class Data extends AbstractHelper{
         try {
             return $this->dillerAPI->Transactions->createTransaction($this->store_uid, $member_id, $data);
         }
-        catch (\DillerAPI\ApiException $ex){
+        catch (ApiException){
             return false;
         }
     }
@@ -332,7 +332,7 @@ class Data extends AbstractHelper{
                 }
             }
         }
-        catch (NoSuchEntityException|LocalizedException $ex) {}
+        catch (NoSuchEntityException|LocalizedException) {}
 
         return false;
     }
@@ -377,7 +377,7 @@ class Data extends AbstractHelper{
         if(!empty($sku)){
             try {
                 return $this->productRepository->get($sku);
-            } catch (NoSuchEntityException $ex) {}
+            } catch (NoSuchEntityException) {}
         }
 
         return false;
@@ -477,19 +477,19 @@ class Data extends AbstractHelper{
         if(!empty($id)){
             try {
                 return $this->ruleRepository->getById($id);
-            } catch (NoSuchEntityException|LocalizedException $ex) {}
+            } catch (NoSuchEntityException|LocalizedException) {}
         }
 
         if(!empty($name)){
             try {
                 if($price_rule = $this->getPriceRuleByName($name)) return $price_rule;
-            } catch (NoSuchEntityException|LocalizedException $ex) {}
+            } catch (NoSuchEntityException|LocalizedException) {}
         }
 
         if(!empty($promo_code)){
             try {
                 return $this->getPriceRuleByPromoCode($promo_code);
-            } catch (NoSuchEntityException|LocalizedException $ex) {}
+            } catch (NoSuchEntityException|LocalizedException) {}
         }
 
         return false;
@@ -534,7 +534,7 @@ class Data extends AbstractHelper{
                     return $this->getPriceRule($item->getRuleId());
                 }
             }
-        }catch(LocalizedException $ex){}
+        }catch(LocalizedException){}
 
         return false;
     }

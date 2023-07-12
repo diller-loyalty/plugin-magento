@@ -13,11 +13,11 @@ use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 use Magento\Customer\Model\ResourceModel\CustomerFactory;
 
 class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
-    protected $request;
-    protected $customer;
-    protected $_coreRegistry;
-    protected $customerFactory;
-    protected $customerRepository;
+    protected RequestInterface $request;
+    protected Customer $customer;
+    protected Registry $_coreRegistry;
+    protected CustomerFactory $customerFactory;
+    protected CustomerRepositoryInterface $customerRepository;
     protected Data $loyaltyHelper;
     protected TimezoneInterface $timezone;
 
@@ -35,9 +35,9 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
      * Sent transaction to Diller if consent was given and if the order status matches the status chosen in the module backoffice.
      *
      * @param EventObserver $observer
-     * @return true
+     * @return bool
      */
-    public function execute(EventObserver $observer){
+    public function execute(EventObserver $observer): bool{
         $event = $observer->getEvent();
         $order = $event->getOrder();
 

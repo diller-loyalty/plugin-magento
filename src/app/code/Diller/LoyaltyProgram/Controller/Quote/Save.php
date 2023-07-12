@@ -2,34 +2,34 @@
 
 namespace Diller\LoyaltyProgram\Controller\Quote;
 
-use Magento\Framework\Controller\Result\Raw;
-use Magento\Framework\Controller\ResultFactory;
+use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Api\CartRepositoryInterface;
 
-class Save extends \Magento\Framework\App\Action\Action
-{
-    protected $quoteIdMaskFactory;
+use Magento\Framework\App\Action\Action;
+use Magento\Framework\App\Action\Context;
+use Magento\Framework\Exception\NoSuchEntityException;
 
-    protected $quoteRepository;
-    private $resultRawFactory;
+class Save extends Action{
+    protected QuoteIdMaskFactory $quoteIdMaskFactory;
+    protected CartRepositoryInterface $quoteRepository;
 
     public function __construct(
-        \Magento\Framework\App\Action\Context $context,
-        \Magento\Quote\Model\QuoteIdMaskFactory $quoteIdMaskFactory,
-        \Magento\Quote\Api\CartRepositoryInterface $quoteRepository,
-        ResultFactory $resultRawFactory
+        Context $context,
+        QuoteIdMaskFactory $quoteIdMaskFactory,
+        CartRepositoryInterface $quoteRepository
     ) {
         $this->quoteRepository = $quoteRepository;
         $this->quoteIdMaskFactory = $quoteIdMaskFactory;
-        $this->resultRawFactory = $resultRawFactory;
         parent::__construct($context);
     }
 
     /**
-        * Execute request
-        *
-     * @return \Magento\Framework\Controller\Result\Raw
+     * Execute request
+     *
+     * @throws NoSuchEntityException
      */
-    public function execute(): Raw{
+    public function execute(): void
+    {
         $post = $this->getRequest()->getPostValue();
         if ($post) {
             $cartId                         = $post['cartId'];
@@ -50,9 +50,5 @@ class Save extends \Magento\Framework\App\Action\Action
             $quote->setData('diller_order_history_consent', $diller_order_history_consent);
             $this->quoteRepository->save($quote);
         }
-
-        /** @var \Magento\Framework\Controller\Result\Raw $resultRaw */
-        $resultRaw = $this->resultRawFactory->create();
-        return $resultRaw;
     }
 }

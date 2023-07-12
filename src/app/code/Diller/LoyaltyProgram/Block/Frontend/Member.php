@@ -7,13 +7,13 @@ namespace Diller\LoyaltyProgram\Block\Frontend;
 
 use Diller\LoyaltyProgram\Helper\Data;
 
-use DillerAPI\DillerAPI;
+use Magento\Checkout\Model\Session;
 
 use Magento\Customer\Helper\View;
-use Magento\Checkout\Model\Session;
-use Magento\Framework\View\Element\Template;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Customer\Helper\Session\CurrentCustomer;
+
+use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use Magento\Framework\Exception\NoSuchEntityException;
 
@@ -35,16 +35,6 @@ class Member extends Template {
      * @var CurrentCustomer
      */
     protected CurrentCustomer $currentCustomer;
-
-    /**
-     * @var DillerAPI
-     */
-    private DillerAPI $dillerAPI;
-
-    /**
-     * @var String
-     */
-    private String $store_uid;
 
     /**
      * @var Session
@@ -85,7 +75,7 @@ class Member extends Template {
     public function getCustomer(): ?CustomerInterface {
         try {
             return $this->currentCustomer->getCustomer();
-        } catch (NoSuchEntityException $e) {
+        } catch (NoSuchEntityException) {
             return null;
         }
     }
@@ -121,7 +111,8 @@ class Member extends Template {
         return $this->_loyaltyHelper->getMemberStampCards($id);
     }
 
-    public function getCheckoutSession(){
+    public function getCheckoutSession(): Session
+    {
         return $this->checkoutSession;
     }
 }

@@ -2,6 +2,7 @@
 namespace Diller\LoyaltyProgram\Model\Rule\Action\Discount;
 
 use Magento\SalesRule\Model\Rule;
+use Magento\SalesRule\Model\Rule\Action\Discount\Data;
 use Magento\SalesRule\Model\Validator;
 use Magento\Quote\Model\Quote\Item\AbstractItem;
 use Magento\Framework\Pricing\PriceCurrencyInterface;
@@ -14,8 +15,8 @@ class StampCardDiscount extends AbstractDiscount{
     protected $priceCurrency;
 
     public function __construct(
-        Validator $validator,
-        \Magento\SalesRule\Model\Rule\Action\Discount\DataFactory $discountDataFactory,
+        Validator              $validator,
+        DataFactory            $discountDataFactory,
         PriceCurrencyInterface $priceCurrency
     ){
         $this->discountDataFactory = $discountDataFactory;
@@ -26,9 +27,9 @@ class StampCardDiscount extends AbstractDiscount{
      * @param Rule $rule
      * @param AbstractItem $item
      * @param float $qty
-     * @return \Magento\SalesRule\Model\Rule\Action\Discount\Data
+     * @return Data
      */
-    public function calculate($rule, $item, $qty): \Magento\SalesRule\Model\Rule\Action\Discount\Data
+    public function calculate($rule, $item, $qty): Data
     {
         return $this->_calculateStampCardDiscount($item);
     }
@@ -37,9 +38,9 @@ class StampCardDiscount extends AbstractDiscount{
      * Calculate Stamp card discount amount
      *
      * @param AbstractItem $item
-     * @return \Magento\SalesRule\Model\Rule\Action\Discount\Data
+     * @return Data
      */
-    protected function _calculateStampCardDiscount(AbstractItem $item): \Magento\SalesRule\Model\Rule\Action\Discount\Data{
+    protected function _calculateStampCardDiscount(AbstractItem $item): Data{
         $discountData = $this->discountDataFactory->create();
 
         $discountAmount = 0;

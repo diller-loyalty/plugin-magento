@@ -9,6 +9,7 @@ use Diller\LoyaltyProgram\Helper\Data;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\Controller\ResultFactory;
+use Magento\Framework\View\Result\Page;
 
 class Index extends Action{
 
@@ -28,8 +29,9 @@ class Index extends Action{
         parent::__construct($context);
         $this->loyaltyHelper = $loyaltyHelper;
     }
-    public function execute() {
-        /** @var \Magento\Framework\View\Result\Page $resultPage */
+    public function execute(): Page
+    {
+        /** @var Page $resultPage */
         $resultPage = $this->resultFactory->create(ResultFactory::TYPE_PAGE);
         $loyaltyDetails = $this->loyaltyHelper->getLoyaltyDetails();
         $resultPage->getConfig()->getTitle()->set(__($loyaltyDetails['storeName']));

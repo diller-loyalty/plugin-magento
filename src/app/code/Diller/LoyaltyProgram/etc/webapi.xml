@@ -1,13 +1,21 @@
 <?xml version="1.0" ?>
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
-    <route method="POST" url="/V1/diller-loyaltyprogram/coupon">
-        <service class="Diller\LoyaltyProgram\Api\CouponManagementInterface" method="setCoupon"/>
+    <route method="PUT" url="/V1/diller-loyaltyprogram/:type/:priceRuleId">
+        <service class="Diller\LoyaltyProgram\Api\CouponStampCardManagementInterface" method="update"/>
         <resources>
             <resource ref="anonymous"/>
         </resources>
     </route>
-    <route method="POST" url="/V1/diller-loyaltyprogram/stampcard">
-        <service class="Diller\LoyaltyProgram\Api\CouponManagementInterface" method="setStampCard"/>
+
+    <route method="POST" url="/V1/diller-loyaltyprogram/:type">
+        <service class="Diller\LoyaltyProgram\Api\CouponStampCardManagementInterface" method="create"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+
+    <route method="DELETE" url="/V1/diller-loyaltyprogram/:type/:priceRuleId">
+        <service class="Diller\LoyaltyProgram\Api\CouponStampCardManagementInterface" method="delete"/>
         <resources>
             <resource ref="anonymous"/>
         </resources>
