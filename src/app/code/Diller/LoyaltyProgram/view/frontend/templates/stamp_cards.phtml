@@ -34,7 +34,7 @@ if($customer = $block->getCustomer()){
 // store details
 $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 ?>
-<?php if($is_member && !empty($valid_stamp_cards)) { ?>
+<?php if($is_member) { ?>
     <div class="diller-container stamp-cards">
         <h3 class="page-title">
             <span id="diller-stamp-cards-container-title-cart" style="display:none" class="base" data-ui-id="page-title-wrapper"><b><?= $loyaltyDetails['storeName'] ?></b> stamp cards</span>
@@ -42,31 +42,33 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
         </h3>
         <hr>
 
-
-        <?php
-            foreach ($valid_stamp_cards as $stamp_card) { ?>
-            <div class="stamp-card id_<?= $stamp_card->getId() ?>">
-                <h3><?= $stamp_card->getTitle() ?></h3>
-                <p><?= $stamp_card->getDescription() ?> (<?=$stamp_card->getStampsCollected() ?>/<?=$stamp_card->getRequiredStamps() ?>)</p>
-                <div class="stamps">
-                    <?php for ($x = 1; $x <= $stamp_card->getRequiredStamps(); $x++) { ?>
-                        <div class="stamp <?= $stamp_card->getStampsCollected() >= $x ? 'collected' : '' ?>" <?= $x == $stamp_card->getRequiredStamps() ? 'title="'.$stamp_card->getLastStampText().'"' : '' ?>></div>
-                    <?php } ?>
-                </div>
-                <div class="products">
-                    <?= "<p>To add a new stamp to this card, you must buy " . (count($stamp_card['products']) > 1 ? "one of following products" : "the following product") . '</p>' ?>
-                    <ul>
-                        <?php foreach($stamp_card['products'] as $product){ ?>
-                            <li><a href="<?= $product->getProductUrl() ?>" target="_blank"><?= $product->getName() ?></a></li>
+        <?php if(!empty($valid_stamp_cards)) { ?>
+            <?php foreach ($valid_stamp_cards as $stamp_card) { ?>
+                <div class="stamp-card id_<?= $stamp_card->getId() ?>">
+                    <h3><?= $stamp_card->getTitle() ?></h3>
+                    <p><?= $stamp_card->getDescription() ?> (<?=$stamp_card->getStampsCollected() ?>/<?=$stamp_card->getRequiredStamps() ?>)</p>
+                    <div class="stamps">
+                        <?php for ($x = 1; $x <= $stamp_card->getRequiredStamps(); $x++) { ?>
+                            <div class="stamp <?= $stamp_card->getStampsCollected() >= $x ? 'collected' : '' ?>" <?= $x == $stamp_card->getRequiredStamps() ? 'title="'.$stamp_card->getLastStampText().'"' : '' ?>></div>
                         <?php } ?>
-                    </ul>
+                    </div>
+                    <div class="products">
+                        <?= "<p>To add a new stamp to this card, you must buy " . (count($stamp_card['products']) > 1 ? "one of following products" : "the following product") . '</p>' ?>
+                        <ul>
+                            <?php foreach($stamp_card['products'] as $product){ ?>
+                                <li><a href="<?= $product->getProductUrl() ?>" target="_blank"><?= $product->getName() ?></a></li>
+                            <?php } ?>
+                        </ul>
+                    </div>
                 </div>
-            </div>
-            <style>
-                .stamp-cards .id_<?= $stamp_card->getId() ?> .stamp{
-                    background-image: url("<?= $stamp_card->getImageUrl() ?>") !important;
-                }
-            </style>
+                <style>
+                    .stamp-cards .id_<?= $stamp_card->getId() ?> .stamp{
+                        background-image: url("<?= $stamp_card->getImageUrl() ?>") !important;
+                    }
+                </style>
+            <?php } ?>
+        <?php } else { ?>
+            <p>No stamp cards found</p>
         <?php } ?>
     </div>
     <style>

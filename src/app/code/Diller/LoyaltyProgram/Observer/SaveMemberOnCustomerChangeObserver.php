@@ -177,6 +177,8 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
 
             // register member in Diller
             if(!$is_member){
+                $member_object["consent"]["receive_sms"] = true;
+                $member_object["consent"]["receive_email"] = true;
                 try {
                     $member = $this->loyaltyHelper->registerMember(json_encode($member_object));
                 }
@@ -187,6 +189,11 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
             else{
                 // update/delete member
                 try {
+                    // Set the communications consents as true if member didn't had GDPR accepted before this
+                    if(!$member->getConsent()->getGdprAccepted() && $member_object['consent']['gdpr_accepted']){
+                        $member_object["consent"]["receive_sms"] = true;
+                        $member_object["consent"]["receive_email"] = true;
+                    }
                     if($this->loyaltyHelper->updateMember($member['id'], json_encode($member_object))) return true;
                     if(!$member_object['consent']['gdpr_accepted']){
                         if($this->loyaltyHelper->deleteMember($member['id'])) return true;

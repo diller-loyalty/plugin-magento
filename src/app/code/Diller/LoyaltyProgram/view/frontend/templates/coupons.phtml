@@ -27,43 +27,47 @@ if($customer = $block->getCustomer()){
 // store details
 $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 ?>
-<?php if($is_member && $loyaltyDetails['pointsSystem']['enabled'] && !empty($valid_coupons)) { ?>
+<?php if($is_member){ ?>
     <div class="diller-container coupons">
         <h3 class="page-title">
             <span id="diller-coupons-container-title-cart" style="display:none" class="base" data-ui-id="page-title-wrapper"><b><?= $loyaltyDetails['storeName'] ?></b> discount codes</span>
             <span id="diller-coupons-container-title-loyalty-page" class="base" data-ui-id="page-title-wrapper">Coupons</span>
         </h3>
         <hr>
-        <div class="diller-coupon-container">
-            <?php foreach ($valid_coupons as $coupon) {
-                $external_ids = $coupon->getExternalIds();
-                if(!empty($external_ids)){
-                    $usages_left = $coupon['maxRedemptions'] - $coupon['timesRedeemed'];
-                    $now = new DateTime(); ?>
-                    <div class="diller-coupon">
-                        <div class="diller-coupon-inner">
-                            <div class="diller-coupon-img" style="background-image: url('<?= $coupon['imageUrl'] ?>')"></div>
-                            <h3 class="diller-coupon-name"><?= $coupon['title'] ?></h3>
-                            <div class="diller-coupon-discount diller-flex-col">
-                                <span><?= $coupon['description'] ?></span>
-                                <span>
-                                    <b>
-                                        <?= $coupon['discountValue'] ?>
-                                        <?= ($coupon['discountType'] === 'Percentage') ? '%' : $loyaltyDetails['currency']?>
-                                    </b>
-                                </span>
+        <?php if(!empty($valid_coupons)) { ?>
+            <div class="diller-coupon-container">
+                <?php foreach ($valid_coupons as $coupon) {
+                    $external_ids = $coupon->getExternalIds();
+                    if(!empty($external_ids)){
+                        $usages_left = $coupon['maxRedemptions'] - $coupon['timesRedeemed'];
+                        $now = new DateTime(); ?>
+                        <div class="diller-coupon">
+                            <div class="diller-coupon-inner">
+                                <div class="diller-coupon-img" style="background-image: url('<?= $coupon['imageUrl'] ?>')"></div>
+                                <h3 class="diller-coupon-name"><?= $coupon['title'] ?></h3>
+                                <div class="diller-coupon-discount diller-flex-col">
+                                    <span><?= $coupon['description'] ?></span>
+                                    <span>
+                                        <b>
+                                            <?= $coupon['discountValue'] ?>
+                                            <?= ($coupon['discountType'] === 'Percentage') ? '%' : $loyaltyDetails['currency']?>
+                                        </b>
+                                    </span>
+                                </div>
+                                <div class="diller-coupon-usage">
+                                    <b><?=$usages_left ?></b> <?= $usages_left > 1 ? 'usages' : 'usage' ?> left
+                                </div>
                             </div>
-                            <div class="diller-coupon-usage">
-                                <b><?=$usages_left ?></b> <?= $usages_left > 1 ? 'usages' : 'usage' ?> left
+                            <div class="diller-coupon-inner-bottom">
+                                <p>Promo code: <b><?= $coupon->getCode() ?></b></p>
                             </div>
                         </div>
-                        <div class="diller-coupon-inner-bottom">
-                            <p>Promo code: <b><?= $coupon->getCode() ?></b></p>
-                        </div>
-                    </div>
-                <?php }
-            } ?>
-        </div>
+                    <?php }
+                } ?>
+            </div>
+        <?php } else { ?>
+            <p>No coupons found</p>
+        <?php } ?>
     </div>
     <style>
 
@@ -251,5 +255,4 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
             text-transform: uppercase;
         }
     </style>
-
 <?php } ?>
