@@ -164,7 +164,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
             if(array_key_exists('loyalty_consent_sms', $params)) $member_object["consent"]["receive_sms"] = true;
             if(array_key_exists('loyalty_consent_email', $params)) $member_object["consent"]["receive_email"] = true;
             if(array_key_exists('loyalty_consent_order_history', $params)) $member_object["consent"]["save_order_history"] = true;
-            if(array_key_exists('birth_date', $params)) $member_object['birth_date'] = date('Y-m-d', strtotime($params['birth_date']));
+            if(array_key_exists('birth_date', $params)) $member_object['birth_date'] = !empty($params['birth_date']) ? date('Y-m-d', strtotime($params['birth_date'])) : null;
             if(array_key_exists('gender', $params)) $member_object['gender'] = $params['gender'];
 
             $member_object['address'] = array(

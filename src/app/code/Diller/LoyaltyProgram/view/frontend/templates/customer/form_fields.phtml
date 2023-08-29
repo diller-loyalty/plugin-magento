@@ -18,9 +18,9 @@
     $storeSegments = $loyaltyHelper->getStoreSegments();
     $storeDepartments = $loyaltyHelper->getStoreDepartments();
 ?>
-<fieldset class="fieldset account <?= $is_member ? ('update member_' . $member->getId()) : 'create' ?> ">
-    <legend class="legend"><span><?= $loyaltyDetails['storeName'] ?></span></legend><br>
-    <div class="field phonenumber <?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? 'required' : '' ?>">
+<fieldset id="loyaltyForm" class="fieldset account <?= $is_member ? ('update member_' . $member->getId()) : 'create' ?> ">
+    <legend class="legend"><span><?= $loyaltyDetails['storeName'] ?></span></legend>
+    <div class="loyalty field phonenumber <?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? 'required' : '' ?>">
         <label class="label" for="phonenumber">
             <span><?= $block->escapeHtml(__('Phone Number')) ?></span>
         </label>
@@ -30,14 +30,28 @@
         </div>
     </div>
 
+    <!-- OTP -->
+    <div class="loyalty field otp" style="display:none">
+        <div>
+            <label class="label" for="otp">
+                <span><?= $block->escapeHtml(__('One Time Password (OTP)')) ?></span>
+            </label>
+            <div class="control">
+                <input type="password" name="otp" id="otp" title="<?= $block->escapeHtml(__('One Time Password (OTP)')) ?>" class="input-text">
+            </div>
+        </div>
+        <a id="loyaltyMemberLogin"><?= $block->escapeHtml(__('Loyalty login')) ?></a>
+    </div>
+
+    <span id="loyalty-notification"></span>
+
     <!-- Birthdate -->
-    <div class="loyalty field date">
+    <div class="loyalty field birth date">
         <label class="label" for="birthdate">
             <span><?= $block->escapeHtml(__('Birthdate')) ?></span>
         </label>
-        <div class="control flatpickr">
-            <input type="text" placeholder="Select Date... (dd-mm-yyyy)" data-input name="birth_date" id="birth_date" value="<?= $is_member ? (($member->getBirthDate() != null) ? date_format($member->getBirthDate(),"d-m-Y") : '') : '' ?>" title="<?= $block->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
-            <a class="calendar-button" title="toggle" data-toggle></a>
+        <div class="control">
+            <input type="date" name="birth_date" id="birth_date" value="<?= $is_member ? (($member->getBirthDate() != null) ? date_format($member->getBirthDate(),"Y-m-d") : '') : '' ?>" title="<?= $block->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
         </div>
     </div>
 
@@ -50,7 +64,7 @@
         array("id" => 3, "name" => "Don't want to share"),
     )
     ?>
-    <div class="loyalty options field">
+    <div class="loyalty field options">
         <label class="label" for="gender">
             <span><?= $block->escapeHtml(__('Gender')) ?></span>
         </label>
@@ -65,7 +79,7 @@
     </div>
 
     <!-- Address -->
-    <div class="loyalty field">
+    <div class="loyalty field half">
         <label class="label" for="address">
             <span><?= $block->escapeHtml(__('Address')) ?></span>
         </label>
@@ -75,7 +89,7 @@
     </div>
 
     <!-- ZIPCODE -->
-    <div class="loyalty field">
+    <div class="loyalty field half">
         <label class="label" for="zip_code">
             <span><?= $block->escapeHtml(__('Zip Code')) ?></span>
         </label>
@@ -85,7 +99,7 @@
     </div>
 
     <!-- CITY -->
-    <div class="loyalty field">
+    <div class="loyalty field half">
         <label class="label" for="city">
             <span><?= $block->escapeHtml(__('City')) ?></span>
         </label>
@@ -95,7 +109,7 @@
     </div>
 
     <!-- COUNTRY -->
-    <div class="loyalty field">
+    <div class="loyalty field half">
         <label class="label" for="country">
             <span><?= $block->escapeHtml(__('Country')) ?></span>
         </label>
@@ -134,7 +148,7 @@
                 default:
                     $segment_type = "text";
             } ?>
-            <div class="loyalty<?= ($segment_type === 'radio' || $segment_type === 'checkbox') ? ' options' : ''?> field<?= (($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? ' required' : '' ?> ">
+            <div class="loyalty field<?= ($segment_type === 'radio' || $segment_type === 'checkbox') ? ' options' : ''?> <?= (($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? ' required' : '' ?> ">
                 <label class="label" for="segment_<?= $segment['id'] ?>">
                     <span><?= $segment['text'] ?></span>
                 </label>
@@ -143,7 +157,7 @@
                         <select name="segment_<?= $segment['id'] ?>" id="segment_<?= $segment['id'] ?>" data-validate="{<?= (($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? 'required:true' : '' ?>}">
                             <option value="">...</option>
                             <?php foreach($segment['options'] as $option ){ ?>
-                                <option value="<?= $option['id'] ?>" <?= ($memberResponse['value'] == $option['id']) ? 'selected' : '' ?>><?= $option['text'] ?></option>
+                                <option id="segment_<?= $segment['id'] ?>_option_<?= $option['id'] ?>" value="<?= $option['id'] ?>" <?= ($memberResponse['value'] == $option['id']) ? 'selected' : '' ?>><?= $option['text'] ?></option>
                             <?php } ?>
                         </select>
                     <?php }elseif($segment_type === "checkbox" || $segment_type === "radio"){
@@ -152,7 +166,7 @@
                                 <input
                                     type="<?= $segment_type ?>"
                                     name="<?= ($segment_type === "checkbox") ? "segment_" . $segment['id']."[]" : "segment_" . $segment['id'] ?>"
-                                    id="<?= $option['id'] ?>"
+                                    id="segment_<?= $segment['id'] ?>_option_<?= $option['id'] ?>"
                                     value="<?= $option['id'] ?>"
                                     title="<?= $option['text'] ?>"
                                     class="input-<?= $segment_type ?>"
@@ -167,21 +181,19 @@
                                         echo 'checked';
                                     } ?>
                                 >
-                                <label for="<?= $option['id'] ?>"><?= $option['text'] ?></label>
+                                <label for="segment_<?= $segment['id'] ?>_option_<?= $option['id'] ?>"><?= $option['text'] ?></label>
                             </div>
                         <?php }
                     }elseif($segment_type === "date"){ ?>
-                        <div class="control flatpickr">
+                        <div class="control">
                             <input
-                                    type="text"
+                                    type="date"
                                     class="input-date"
                                     title="<?= $segment['id'] ?>"
                                     id="segment_<?= $segment['id'] ?>"
-                                    data-input name="segment_<?= $segment['id'] ?>"
-                                    placeholder="Select <?= $segment['text'] ?>... (dd-mm-yyyy)"
+                                    name="segment_<?= $segment['id'] ?>"
                                     data-validate="{<?= (($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) && $segment->getIsRequired()) ? 'required:true' : '' ?>}"
                                     value="<?= $memberResponse['value'] ? date("Y-m-d", strtotime($memberResponse['value'])) : '' ?>">
-                            <a class="calendar-button" title="toggle" data-toggle></a>
                         </div>
                     <?php }else{ ?>
                         <div class="control">
@@ -202,22 +214,22 @@
 
     <!-- DEPARTMENTS -->
     <?php if (!empty($storeDepartments)) { ?>
-        <div class="loyalty options field">
+        <div class="loyalty field options">
             <label class="label">
                 <span>Department</span>
             </label>
             <div class="control">
                 <?php foreach($storeDepartments as $option ){?>
                     <div class="option">
-                        <input type="checkbox" name="department[]" id="<?= $option['id'] ?>" value="<?= $option['id'] ?>" title="<?= $option['name'] ?>" class="input-checkbox" <?= $is_member ? (in_array($option['id'], $member['departmentIds']) ? 'checked' : '') : '' ?>>
-                        <label for="<?= $option['id'] ?>"><?= $option['name'] ?></label>
+                        <input type="checkbox" name="department[]" id="department_<?= $option['id'] ?>" value="<?= $option['id'] ?>" title="<?= $option['name'] ?>" class="input-checkbox" <?= $is_member ? (in_array($option['id'], $member['departmentIds']) ? 'checked' : '') : '' ?>>
+                        <label for="department_<?= $option['id'] ?>"><?= $option['name'] ?></label>
                     </div>
                 <?php } ?>
             </div>
         </div>
     <?php } ?>
 
-    <div class="loyalty options field <?= ($loyaltyHelper->areLoyaltyFieldsMandatory() && !$is_member) ? 'required' : '' ?>">
+    <div class="loyalty field options consent<?= ($loyaltyHelper->areLoyaltyFieldsMandatory() && !$is_member) ? ' required' : '' ?>">
         <label class="label">
             <span>Marketing Consent</span>
         </label>
@@ -282,10 +294,9 @@
             const countryCodeInput = window.activeCountryCodeInput = (phoneCCElSibling && phoneCCElSibling.type === "hidden" && phoneCCElSibling.tagName === "INPUT")
                 ? phoneNumberInput.previousElementSibling
                 : phoneNumberInput.closest('.control > input[id^=loyalty_phone_number]');
+            let lastphoneNumberSearched = 0;
 
             if (countryCodeInput) {
-                console.log(`Loading intl-phoneinput. Form Id: ${formId} | Phone: ${phoneNumberInput.id || phoneNumberInput.name} | CC: ${countryCodeInput.id}`);
-
                 const iti = window.intlTelInput(phoneNumberInput, {
                     preferredCountries: ['no', 'us', 'ca', 'gb', 'se', 'dk', 'fi'],
                     separateDialCode: true,
@@ -298,24 +309,188 @@
                 if (phoneNumberInput.value) {
                     iti.setNumber(countryCodeInput.value + phoneNumberInput.value);
                 }
-
                 // phone number input listener
                 phoneNumberInput.addEventListener("blur", function (event) {
-                    setActiveItiInstance(event.target);
+                    if(phoneNumberInput.value.length > 0){
+                        setActiveItiInstance(event.target);
 
-                    // console.log("phoneNumberInput blur listener", window.activePhoneNumberInput, window.activeCountryCodeInput, window.activeItiInstance);
+                        // console.log("phoneNumberInput blur listener", window.activePhoneNumberInput, window.activeCountryCodeInput, window.activeItiInstance);
 
-                    let dialCode = window.activeItiInstance.getSelectedCountryData().dialCode;
-                    const phoneNumber = event.target.value.replace(/\D/g, '').replace("+" + dialCode, "");
-                    if (window.activeItiInstance.getSelectedCountryData().iso2) {
-                        phone_country_iso2_code = window.activeItiInstance.getSelectedCountryData().iso2.toUpperCase();
-                        window.activeCountryCodeInput.value = "+" + window.activeItiInstance.getSelectedCountryData().dialCode.replace(/\+/i, "");
-                        event.target.value = intlTelInputUtils.formatNumber(phoneNumber, phone_country_iso2_code, intlTelInputUtils.numberFormat.NATIONAL);
-                        // console.log(`Removed country code ${dialCode} from number ${phoneNumber} and applied format for country ${phone_country_iso2_code}`);
-                    } else {
-                        event.target.value = phoneNumber;
+                        let dialCode = window.activeItiInstance.getSelectedCountryData().dialCode;
+                        const phoneNumber = event.target.value.replace(/\D/g, '').replace("+" + dialCode, "");
+                        if (window.activeItiInstance.getSelectedCountryData().iso2) {
+                            phone_country_iso2_code = window.activeItiInstance.getSelectedCountryData().iso2.toUpperCase();
+                            window.activeCountryCodeInput.value = "+" + window.activeItiInstance.getSelectedCountryData().dialCode.replace(/\+/i, "");
+                            event.target.value = intlTelInputUtils.formatNumber(phoneNumber, phone_country_iso2_code, intlTelInputUtils.numberFormat.NATIONAL);
+                        } else {
+                            event.target.value = phoneNumber;
+                        }
+
+                        let phoneNumberToSearch = dialCode + phoneNumberInput.value.replace(" ", "");
+                        if(window.activeItiInstance.isValidNumber()){
+                            if(phoneNumberToSearch !== lastphoneNumberSearched){
+                                setLoyaltyNotification("Looking for this phone number in our loyalty system");
+                                lastphoneNumberSearched = phoneNumberToSearch;
+                                $.ajax({
+                                    url: '<?php echo $this->getUrl('loyaltyprogram/member/search'); ?>',
+                                    type: 'POST',
+                                    showLoader: true,
+                                    dataType: 'json',
+                                    data : {phoneNumber: phoneNumberToSearch},
+                                    success: function (response) {
+                                        if(response.success && response.result.is_member){
+                                            setLoyaltyNotification("SMS sent to your phone number with the OTP");
+                                            let memberForm = document.querySelector('#loyaltyForm');
+                                            memberForm.setAttribute("member_id", response.result.member_id);
+
+                                            if(memberForm.classList.contains('create')) memberForm.classList.remove('create');
+                                            if(memberForm.classList.contains('update')) memberForm.classList.remove('update');
+                                            memberForm.classList.add('login');
+                                            const requiredLoyaltyFields = document.querySelectorAll("#loyaltyForm > div:not(.phonenumber)");
+
+                                            requiredLoyaltyFields.forEach((field) => {
+                                                if(field.classList.contains('required')) field.classList.remove('required');
+                                            });
+                                        }else{
+                                            setLoyaltyNotification("No member found with that phone number");
+                                        }
+                                    }
+                                });
+                            }
+                        }else{
+                            setLoyaltyNotification("Invalid phone number");
+                        }
                     }
                 });
+
+                document.querySelector("#loyaltyForm > div.otp #loyaltyMemberLogin").addEventListener("click", function (event) {
+                    event.preventDefault();
+                    let memberForm = document.querySelector('#loyaltyForm');
+                    $.ajax({
+                        url: '<?php echo $this->getUrl('loyaltyprogram/member/validateotp'); ?>',
+                        type: 'POST',
+                        showLoader: true,
+                        dataType: 'json',
+                        data : {
+                            memberId: memberForm.getAttribute("member_id"),
+                            otp: document.querySelector("#loyaltyForm > div.otp input").value
+                        },
+                        success: function (response) {
+                            if(!response.success) {
+                                setLoyaltyNotification("Invalid OTP");
+                                return;
+                            }
+
+                            if(memberForm.classList.contains('login')) memberForm.classList.remove('login');
+                            memberForm.classList.add('update');
+
+                            // populate form fields with member details
+                            let member = response.result;
+
+                            console.log(member);
+
+                            let customerFirstName = document.querySelector('#firstname');
+                            if(customerFirstName.value.length === 0 && member.first_name.length > 0){
+                                customerFirstName.value = member.first_name;
+                            }
+                            let customerLastName = document.querySelector('#lastname');
+                            if(customerLastName.value.length === 0 && member.last_name.length > 0){
+                                customerLastName.value = member.last_name;
+                            }
+                            let customerEmail = document.querySelector('#email_address');
+                            if(customerEmail.value.length === 0 && member.email.length > 0){
+                                customerEmail.value = member.email;
+                            }
+
+                            if(member.birth_date){
+                                let birthdate = new Date(member.birth_date);
+                                document.querySelector("#loyaltyForm > .field.birth.date input#birth_date").value = (birthdate.getFullYear() + '-' + birthdate.toLocaleString('default', { month: '2-digit' }) + '-' + birthdate.getDate());
+                            }
+
+                            if(member.gender){
+                                const genderOptions = document.querySelectorAll("#loyaltyForm input[type='radio'][name='gender']");
+                                genderOptions.forEach((genderOption) => {
+                                    if(genderOption.value === member.gender){
+                                        genderOption.checked = true;
+                                    }
+                                });
+                            }
+
+                            // address
+                            let customerAddress = document.querySelector('#loyaltyForm #address');
+                            if(customerAddress.value.length === 0 && member.address.street.length > 0){
+                                customerAddress.value = member.address.street;
+                            }
+                            // zipcode
+                            let customerAddressZipcode = document.querySelector('#loyaltyForm #zip_code');
+                            if(customerAddressZipcode.value.length === 0 && member.address.zip_code.length > 0){
+                                customerAddressZipcode.value = member.address.zip_code;
+                            }
+                            // city
+                            let customerAddressCity = document.querySelector('#loyaltyForm #city');
+                            if(customerAddressCity.value.length === 0 && member.address.city.length > 0){
+                                customerAddressCity.value = member.address.city;
+                            }
+                            // country
+                            let customerAddressCountry = document.querySelector('#loyaltyForm #country_code');
+                            if(customerAddressCountry && member.address.country_code.length > 0){
+                                let countryInput = document.querySelector("#loyaltyForm #country");
+                                if(countryInput){
+                                    countryInput.value = member.address.country_code.toLowerCase();
+                                    countryInput.dispatchEvent(new Event('blur'))
+                                }
+                            }
+
+                            if(member.segments.length > 0){
+                                member.segments.forEach((segment) => {
+                                    switch (segment.type){
+                                        case "Checkbox":
+                                            if(segment.selected_options.length > 0){
+                                                segment.selected_options.forEach((option) => {
+                                                    let element = document.querySelector('#loyaltyForm input#segment_' + segment.id + "_option_" + option);
+                                                    if(element){
+                                                        element.checked = true;
+                                                    }
+                                                });
+                                            }
+                                            break;
+                                        default:
+                                            let element = document.querySelector('#loyaltyForm #segment_' + segment.id);
+                                            if(element && segment.value.length > 0){
+                                                element.value = segment.value;
+                                            }
+                                    }
+                                });
+                            }
+
+                            if(member.department_ids.length > 0){
+                                member.department_ids.forEach((department) => {
+                                    let element = document.querySelector("#loyaltyForm #department_" + department);
+                                    if(element){
+                                        element.checked = true;
+                                    }
+                                });
+                            }
+
+
+                            if(member.consent.gdpr_accepted){
+                                document.querySelector('#loyalty_consent').checked = true;
+                            }
+                            if(member.consent.save_order_history){
+                                document.querySelector('#loyalty_consent_order_history').checked = true;
+                            }
+                            if(member.consent.receive_sms){
+                                let consentSmsInput = document.querySelector('#loyalty_consent_sms');
+                                if(consentSmsInput) consentSmsInput.checked = true;
+                            }
+                            if(member.consent.receive_email){
+                                let consentEmailInput = document.querySelector('#loyalty_consent_email');
+                                if(consentEmailInput) consentEmailInput.checked = true;
+                            }
+                        }
+                    });
+                });
+
 
                 phoneNumberInput.addEventListener("keypress", function (event) {
                     if (event.key === "Enter") {
@@ -331,10 +506,17 @@
                     }
                     if (iti.getSelectedCountryData().dialCode) {
                         window.activeCountryCodeInput.value = "+" + window.activeItiInstance.getSelectedCountryData().dialCode.replace(/\+/i, "");
-                        //console.log(`Phone: updating country dial code to ${window.activeCountryCodeInput.value}`);
                     }
                 });
                 setActiveItiInstance(phoneNumberInput);
+
+                let setLoyaltyNotification = function(message) {
+                    let loyaltyFormNotification = document.querySelector("#loyalty-notification");
+                    loyaltyFormNotification.innerHTML = message;
+                    setTimeout(function(){
+                        loyaltyFormNotification.innerHTML = '';
+                    }, 6000);
+                }
             }
         });
         const setActiveItiInstance = function(inputField){
@@ -349,23 +531,8 @@
                         window.activeCountryCodeInput.value = "+" + window.activeItiInstance.getSelectedCountryData().dialCode.replace(/\+/i, "");
                     }
                 }
-
-                console.info("setActiveItiInstance called", window.activePhoneNumberInput, window.activeCountryCodeInput.value, window.activeCountryCodeInput, window.activeItiInstance);
             }
         };
-    });
-
-    // Date picker
-    require(['jquery','flatpicker'],function($){
-        $(window).on('load', function() {
-            flatpickr(".flatpickr", {
-                dateFormat: "d-m-Y",
-                allowInput: true,
-                allowInvalidPreload: true,
-                clickOpens: false,
-                wrap: true
-            });
-        });
     });
 
     // Country select script
@@ -379,9 +546,79 @@
 </script>
 
 <link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Diller_LoyaltyProgram::node_modules/intl-tel-input/build/css/intlTelInput.css') ?>" />
-<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Diller_LoyaltyProgram::node_modules/flatpickr/dist/flatpickr.css') ?>" />
 <link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Diller_LoyaltyProgram::node_modules/country-select-js/build/css/countrySelect.css') ?>" />
 <style>
+    #loyalty-notification:empty {
+        height:0 !important;
+        overflow: hidden;
+        min-height: unset;
+    }
+    #loyalty-notification {
+        margin: -5px 0 20px;
+        float:left;
+        width:100%;
+        transition: 0.2s all ease;
+        padding-left: 20px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        height: 30px;
+        align-self: end;
+        font-weight: 500;
+    }
+    #loyalty-notification:before {
+        background-image: url(<?= $block->getViewFileUrl('Diller_LoyaltyProgram::img/info.svg') ?>);
+        background-position: center center;
+        background-repeat: no-repeat;
+        background-size: contain;
+        margin: 0 0 0 -20px;
+        position: relative;
+        height: 20px;
+        content: "";
+        width: 20px;
+        float: left;
+    }
+
+    #loyaltyForm.login > div:not(.phonenumber){
+        display:none;
+    }
+    #loyaltyForm.login > div.otp{
+        display:flex !important;
+    }
+    #loyaltyForm > .loyalty.otp {
+        align-items: flex-end;
+        gap: 20px;
+    }
+    #loyaltyForm > .loyalty.otp > div {
+        flex: auto;
+    }
+    #loyaltyForm > .loyalty.otp > div label {
+        font-weight: 600;
+        margin: 0 0 7px;
+        float: left;
+        width: 100%;
+    }
+    #loyaltyForm > .loyalty.otp > a{
+        background-image: none;
+        background: #1979c3;
+        border: 1px solid #1979c3;
+        color: #ffffff;
+        cursor: pointer;
+        display: inline-block;
+        font-weight: 600;
+        padding: 5px 15px;
+        font-size: 1.4rem;
+        box-sizing: border-box;
+        vertical-align: middle;
+        text-decoration:none;
+        transition: 0.2s all ease;
+    }
+    #loyaltyForm > .loyalty.otp > a:hover{
+        opacity:0.6
+    }
+
+
     .field > .label{
         font-weight:bold;
     }
@@ -410,32 +647,22 @@
         width: 100%;
     }
 
-    /* flatpicker */
-    .control.flatpickr {
+    fieldset#loyaltyForm {
         display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
     }
-    .control.flatpickr > input {
-        height: 35px;
-        padding: 10px;
+    fieldset#loyaltyForm > * {
+        flex: 100%;
+        width: 100%;
+        margin:0;
     }
-    .flatpickr a.calendar-button {
-        text-decoration: none;
-        border: 1px solid #bbb;
-        display: flex;
-        border-left: 0;
-        cursor: pointer;
-        align-self: center;
-        justify-content: center;
-        background-image: url(http://magento.test/static/version1681289973/frontend/Magento/luma/en_US/Diller_LoyaltyProgram/img/calendar.svg);
-        width: 35px;
-        height: 33px;
-        padding: 0;
-        background-size: 55%;
-        background-position: center;
-        background-repeat: no-repeat;
-        transition: 0.2s all ease;
-    }
-    .flatpickr a.calendar-button:hover {
-        background-color: #f2f2f2
+    @media only screen and (min-width: 800px) {
+        fieldset#loyaltyForm > .half {
+            flex: 45%;
+        }
+        .country-select {
+            width: 100%;
+        }
     }
 </style>

@@ -52,7 +52,7 @@
                 ?>
             </div>
             <div class="diller-membership-progress-bar">
-                <div class="diller-membership-progress-bar-indicator" style="width:calc(<?= ((100*$member['membershipDetail']['points'])/$max_points) ?>% - 14px);"><span><?=$member['membershipDetail']['points']?></span></div>
+                <div class="diller-membership-progress-bar-indicator" style="width:calc(<?= ((100*$member['membershipDetail']['points'])/$max_points) ?>% - 14px);"><?php if($member['membershipDetail']['points'] > 0){ ?><span><?=$member['membershipDetail']['points']?></span><?php } ?></div>
             </div>
         </div>
     </div>
@@ -122,11 +122,17 @@
             background-color: var(--diller-membership_progress_bar-background-color);
             justify-content: end;
             align-items: center;
-            padding: 7px 15px;
+            padding: 7px 10px;
             display: flex;
             height: 24px;
             color: #000;
             width: 0;
+            min-width: 17px;
+        }
+        .diller-membership-progress-bar-indicator:empty{
+            min-width: unset;
+            padding-left: 0;
+            padding-right: 0;
         }
 
         .diller-box .diller-membership-progress-points, .diller-box .diller-membership-progress-labels {

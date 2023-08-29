@@ -9,6 +9,7 @@ use DillerAPI\Configuration;
 use DillerAPI\Model\StoreResponse;
 use DillerAPI\Model\StampReservationRequest;
 use DillerAPI\Model\CouponReservationRequest;
+use DillerAPI\Model\LoginOtpVerificationRequest;
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
 
@@ -265,6 +266,24 @@ class Data extends AbstractHelper{
     public function deleteMember($member_id){
         try {
             return $this->dillerAPI->Members->deleteMember($this->store_uid, $member_id);
+        }
+        catch (Exception){
+            return false;
+        }
+    }
+
+    public function sendLoginOTP($member_id){
+        try {
+            return $this->dillerAPI->Members->loginOTP($this->store_uid, $member_id);
+        }
+        catch (Exception){
+            return false;
+        }
+    }
+    public function loginOTPVerification($member_id, $otp)
+    {
+        try {
+            return $this->dillerAPI->Members->loginOtpVerification($this->store_uid, $member_id, new LoginOtpVerificationRequest(array("otpCode" => $otp)));
         }
         catch (Exception){
             return false;
