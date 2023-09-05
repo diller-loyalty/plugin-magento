@@ -99,7 +99,8 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
                     "origin" => array(
                         "system_id" => "magento_" . $order->getStore()->getId(),
                         "employee_id" => "",
-                        "department_id" => $this->loyaltyHelper->getSelectedDepartment()
+                        "department_id" => $this->loyaltyHelper->getSelectedDepartment(),
+                        "channel" => "OnlineStore"
                     ),
                     "total" => $order->getGrandTotal(),
                     "total_tax" => $order->getTaxAmount(),
@@ -122,19 +123,22 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
                             }
                         }
                     }
-                    $transaction_products[] = array(
-                        "product" => array(
-                            "external_id" => $product->getProductId(),
-                            "sku" => $product->getSku(),
-                            "name" => $product->getName()
-                        ),
-                        "quantity" => $product->getQtyOrdered(),
-                        "unit_price" => $product->getPrice(),
-                        "unit_measure" => "",
-                        "tax_percentage" => $product->getTaxPercent(),
-                        "discount" => $product->getDiscountAmount(),
-                        "total_price" => $product->getRowTotal()
-                    );
+                    // TODO: fix product and variation being sent as different items
+                    if($product->getPrice() > 0){
+                        $transaction_products[] = array(
+                            "product" => array(
+                                "external_id" => $product->getProductId(),
+                                "sku" => $product->getSku(),
+                                "name" => $product->getName()
+                            ),
+                            "quantity" => $product->getQtyOrdered(),
+                            "unit_price" => $product->getPrice(),
+                            "unit_measure" => "",
+                            "tax_percentage" => $product->getTaxPercent(),
+                            "discount" => $product->getDiscountAmount(),
+                            "total_price" => $product->getRowTotal()
+                        );
+                    }
                 }
                 $transaction['details'] = $transaction_products;
                 $transaction["coupon_codes"] = !is_null($order->getCouponCode()) ? [$order->getCouponCode()] : [];

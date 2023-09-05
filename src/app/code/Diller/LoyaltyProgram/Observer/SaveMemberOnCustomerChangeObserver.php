@@ -156,6 +156,12 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                     "receive_email" => false,
                     "save_order_history" => false
                 ),
+                "origin" => array(
+                    "system_id" => "magento_" . $order->getStore()->getId(),
+                    "employee_id" => "",
+                    "department_id" => $this->loyaltyHelper->getSelectedDepartment(),
+                    "channel" => "OnlineStore"
+                ),
                 "department_ids" => $params['department'] ?? [],
                 "segments" => $member_segments
             );

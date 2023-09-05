@@ -240,7 +240,7 @@
                        id="loyalty_consent"
                        class="checkbox"
                        data-validate="{<?= ($loyaltyHelper->areLoyaltyFieldsMandatory() && !$is_member) ? 'required:true' : '' ?>}"
-                    <?= $is_member ? ($member->getConsent()->getGDPRAccepted() ? 'checked' : '') : '' ?>
+                    <?= $is_member ? ($member->getConsent()->getGDPRAccepted() ? 'onclick="consentChange()" checked' : '') : '' ?>
                 >
                 <label for="loyalty_consent" class="label">
                     <span>I want to join <?= $loyaltyDetails['storeName'] ?>'s loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like. Read our <a target="_blank" href="<?= $loyaltyDetails["privacyPolicyUrl"] ?>">privacy policy here</a> <?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? '*' : '' ?></span>
@@ -544,6 +544,20 @@
         });
     });
 </script>
+
+<?php if ($is_member){ ?>
+<script>
+    function consentChange() {
+        var gdprConsent = document.getElementById('loyalty_consent');
+        if (gdprConsent.checked != true) {
+            let alertSelection = confirm("Are you sure you want to leave our Loyalty Program? You'll lose access to unique discounts, advantages and your membership progress and points.");
+            if (!alertSelection) {
+                gdprConsent.checked = true;
+            }
+        }
+    }
+</script>
+<?php } ?>
 
 <link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Diller_LoyaltyProgram::node_modules/intl-tel-input/build/css/intlTelInput.css') ?>" />
 <link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Diller_LoyaltyProgram::node_modules/country-select-js/build/css/countrySelect.css') ?>" />
