@@ -2,6 +2,8 @@
 /** @var Member $block */
 use Diller\LoyaltyProgram\Block\Frontend\Member;
 
+/** @var $escaper \Magento\Framework\Escaper */
+
 $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 
 // member details
@@ -37,8 +39,8 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 <?php if($is_member) { ?>
     <div class="diller-container stamp-cards">
         <h3 class="page-title">
-            <span id="diller-stamp-cards-container-title-cart" style="display:none" class="base" data-ui-id="page-title-wrapper"><b><?= $loyaltyDetails['storeName'] ?></b> stamp cards</span>
-            <span id="diller-stamp-cards-container-title-loyalty-page" class="base" data-ui-id="page-title-wrapper">Stamp Cards</span>
+            <span id="diller-stamp-cards-container-title-cart" style="display:none" class="base" data-ui-id="page-title-wrapper"><b><?= $loyaltyDetails['storeName'] ?></b> <?= $escaper->escapeHtml(__('stamp cards')) ?></span>
+            <span id="diller-stamp-cards-container-title-loyalty-page" class="base" data-ui-id="page-title-wrapper" style="text-transform: capitalize"><?= $escaper->escapeHtml(__('stamp cards')) ?></span>
         </h3>
         <hr>
 
@@ -53,7 +55,9 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
                         <?php } ?>
                     </div>
                     <div class="products">
-                        <?= "<p>To add a new stamp to this card, you must buy " . (count($stamp_card['products']) > 1 ? "one of following products" : "the following product") . '</p>' ?>
+                        <p>
+                            <?= $escaper->escapeHtml(__('To add a new stamp to this card')) ?>,
+                            <?= count($stamp_card['products']) > 1 ? $escaper->escapeHtml(__('you must buy one of following products')) : $escaper->escapeHtml(__('you must buy the following product')) ?>:</p>
                         <ul>
                             <?php foreach($stamp_card['products'] as $product){ ?>
                                 <li><a href="<?= $product->getProductUrl() ?>" target="_blank"><?= $product->getName() ?></a></li>
@@ -68,7 +72,7 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
                 </style>
             <?php } ?>
         <?php } else { ?>
-            <p>No stamp cards found</p>
+            <p><?= $escaper->escapeHtml(__('No stamp cards found')) ?></p>
         <?php } ?>
     </div>
     <style>

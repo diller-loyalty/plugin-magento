@@ -1,5 +1,5 @@
 {
-    "name": "diller/module-loyalty-program",
+    "name": "diller-loyalty/magento-module",
     "description": "N/A",
     "type": "magento2-module",
     "license": [
@@ -8,9 +8,12 @@
     "config": {
         "sort-packages": true
     },
-    "version": "0.0.2",
+    "version": "0.0.1",
     "require": {
-        "php": ">=7.4"
+        "php": ">=7.4",
+        "diller-loyalty/php-sdk": ">=0.0.1",
+        "giggsey/libphonenumber-for-php": "^8.13.9",
+        "vlucas/phpdotenv": ">=v5.5.0"
     },
     "autoload": {
         "files": [

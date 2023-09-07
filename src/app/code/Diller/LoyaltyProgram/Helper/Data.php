@@ -2,19 +2,19 @@
 
 namespace Diller\LoyaltyProgram\Helper;
 
+use Dotenv\Dotenv;
+
 use DillerAPI\DillerAPI;
 use DillerAPI\ApiException;
 use DillerAPI\Configuration;
-
 use DillerAPI\Model\StoreResponse;
 use DillerAPI\Model\StampReservationRequest;
 use DillerAPI\Model\CouponReservationRequest;
 use DillerAPI\Model\LoginOtpVerificationRequest;
 
-use Magento\Catalog\Api\ProductRepositoryInterface;
-
 use Magento\Store\Model\ScopeInterface;
 use Magento\Quote\Api\CartRepositoryInterface;
+use Magento\Catalog\Api\ProductRepositoryInterface;
 
 use Magento\SalesRule\Model\RuleRepository;
 use Magento\SalesRule\Api\RuleRepositoryInterface;
@@ -75,6 +75,10 @@ class Data extends AbstractHelper{
         ProductRepositoryInterface $productRepository,
         RuleRepository $ruleRepository,
         ObjectManagerInterface $_objectManager) {
+
+        $dotenv = Dotenv::createImmutable(dirname(__DIR__, 1));
+        $dotenv->load();
+
         $this->scopeConfig = $scopeConfig;
         $this->customer = $customer;
         $this->customerFactory = $customerFactory;
@@ -85,7 +89,9 @@ class Data extends AbstractHelper{
 
         $configs = clone Configuration::getDefaultConfiguration();
         // to set module to production mode
-        // $configs->setHost("https://api.dillerapp.com");
+        // $configs->setHost("https://api.diller.app.");
+        // TODO: give option in backoffice to choose environment
+        define("LOYALTYPROGRAM_ENVIRONMENT", "DEV");
 
         $configs->setUserAgent("DillerLoyaltyPlugin/Magento v1.0.0");
 
@@ -198,6 +204,15 @@ class Data extends AbstractHelper{
         if(!$this->isConnected()) return false;
         try {
             return $this->dillerAPI->Members->getMemberByFilter($this->store_uid, $email, $phone);
+        }
+        catch (Exception){
+            return false;
+        }
+    }
+    public function searchMemberByActivationToken($token){
+        if(!$this->isConnected()) return false;
+        try {
+            return $this->dillerAPI->Members->getMemberByFilter($this->store_uid, null, null, null, $token);
         }
         catch (Exception){
             return false;
@@ -588,5 +603,52 @@ class Data extends AbstractHelper{
             }
         }
         return $validated_stamp_cards;
+    }
+
+    /**
+     * Decrypts the value passed in.
+     * This function is backwards compatible and will support old encrypted values.
+     * However, it will decrypt mainly the improved (but not perfect) values that will
+     * be encrypted using { @see encrypt_value() }
+     *
+     * This function is **not** cryptographically strong, as the Key and IV are static,
+     * but returns a small value which is handy for sending SMS messages with short links.
+     *
+     *
+     * @param $data string Encrypted data
+     *
+     * @return string|bool The decrypted value or false if unsuccessful
+     */
+    public function decrypt_value($data, $passphrase = false){
+        $cipher_algo = "aes-256-cbc";
+
+        // Check for double base64 encoding
+        if(($decoded_value_round1 = base64_decode($data, true))){
+            if(base64_decode($decoded_value_round1, true)){
+                $data = $decoded_value_round1;
+            }
+        }
+        $iv = $_ENV[strtoupper(LOYALTYPROGRAM_ENVIRONMENT . "_encryption_iv")];
+        $passphrase = $_ENV[strtoupper(LOYALTYPROGRAM_ENVIRONMENT . "_encryption_key")];
+
+        // First, try hash() function with $binary = false (default)
+        // When $binary = TRUE, outputs raw binary data. FALSE outputs lowercase hexits
+        $key = hash('sha256', $passphrase);
+
+        // iv – encrypt method AES-256-CBC expects 16 bytes – else you will get a warning
+        $iv_key = substr(hash('sha256', $iv), 0, 16);
+
+        if(!($result = openssl_decrypt($data, $cipher_algo, $key, 0, $iv_key)) || !mb_detect_encoding($result, 'auto', true)){
+
+            // This will also enable raw binary data output, which will return exactly 256 bits
+            // This way we can also decrypt/encrypt the same data directly in MySQL using "AES_ENCRYPT()" and "AES_DECRYPT()",
+            // which is useful for backward compatible implementations outside the PHP realm eg. automated tests, .Net code
+            $key = hash('sha256', $passphrase, true);
+            $iv_key = substr(hash('sha256', $iv, true), 0, 16);
+
+            return openssl_decrypt($data, $cipher_algo, $key, 0, $iv_key);
+        }
+
+        return $result;
     }
 }

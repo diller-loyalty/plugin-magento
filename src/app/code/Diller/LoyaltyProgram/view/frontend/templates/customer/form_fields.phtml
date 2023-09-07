@@ -1,15 +1,37 @@
 <?php
     use Diller\LoyaltyProgram\Block\Frontend\Member;
+    use DillerAPI\Model\MemberResponse;
 
     $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
-
+    
+    /** @var \Magento\Framework\Escaper $escaper */
+    
     // member details
-    $is_member = false;
+    $is_member = $is_enrolling = false;
     /** @var Member $block */
     if($customer = $block->getCustomer()){
         $member = $loyaltyHelper->searchMemberByCustomerId($customer->getId());
         if($member){
             $is_member = $member->getConsent()->getGdprAccepted();
+        }
+    }
+
+    if(!$is_member){
+        // check if a parameter is present and if it came from diller
+        $url_params = explode("/", $_SERVER["REQUEST_URI"]);
+        $url_components = parse_url( $_SERVER["REQUEST_URI"]);
+        if($url_components > 0) {
+            if(array_key_exists('query', $url_components)){
+                parse_str($url_components['query'], $loyalty_params);
+                if(array_key_exists('token', $loyalty_params)){
+                    $result = $loyaltyHelper->searchMemberByActivationToken($loyalty_params['token']);
+                    if(!empty($result)){
+                        $member = $result[0];
+                        $is_member = $member->getConsent()->getGdprAccepted();
+                        if(!$is_member && array_key_exists('dref', $loyalty_params) && $loyalty_params['dref'] === 'signup') $is_member = true;
+                    }
+                }
+            }
         }
     }
 
@@ -22,11 +44,11 @@
     <legend class="legend"><span><?= $loyaltyDetails['storeName'] ?></span></legend>
     <div class="loyalty field phonenumber <?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? 'required' : '' ?>">
         <label class="label" for="phonenumber">
-            <span><?= $block->escapeHtml(__('Phone Number')) ?></span>
+            <span><?= $ecaper->escapeHtml(__('Phone number')) ?></span>
         </label>
         <div class="control">
             <input <?= $is_member ? 'disabled' : '' ?> type="hidden" name="loyalty_phone_countrycode" id="loyalty_phone_countrycode" data-validate="{required:true}" value="<?= $is_member ? $member->getPhone()->getCountryCode() : '' ?>">
-            <input <?= $is_member ? 'disabled' : '' ?> type="text" name="loyalty_phone_number" id="loyalty_phone_number" data-validate="{<?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? 'required:true' : '' ?>}" value="<?= $is_member ? $member->getPhone()->getNumber() : '' ?>" title="<?= $block->escapeHtmlAttr(__('Phone Number')) ?>" class="input-text">
+            <input <?= $is_member ? 'disabled' : '' ?> type="text" name="loyalty_phone_number" id="loyalty_phone_number" data-validate="{<?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? 'required:true' : '' ?>}" value="<?= $is_member ? $member->getPhone()->getNumber() : '' ?>" title="<?= $ecaper->escapeHtmlAttr(__('Phone number')) ?>" class="input-text">
         </div>
     </div>
 
@@ -34,13 +56,13 @@
     <div class="loyalty field otp" style="display:none">
         <div>
             <label class="label" for="otp">
-                <span><?= $block->escapeHtml(__('One Time Password (OTP)')) ?></span>
+                <span><?= $ecaper->escapeHtml(__('One Time Password (OTP)')) ?></span>
             </label>
             <div class="control">
-                <input type="password" name="otp" id="otp" title="<?= $block->escapeHtml(__('One Time Password (OTP)')) ?>" class="input-text">
+                <input type="password" name="otp" id="otp" title="<?= $ecaper->escapeHtml(__('One Time Password (OTP)')) ?>" class="input-text">
             </div>
         </div>
-        <a id="loyaltyMemberLogin"><?= $block->escapeHtml(__('Loyalty login')) ?></a>
+        <a id="loyaltyMemberLogin"><?= $ecaper->escapeHtml(__('Loyalty login')) ?></a>
     </div>
 
     <span id="loyalty-notification"></span>
@@ -48,25 +70,25 @@
     <!-- Birthdate -->
     <div class="loyalty field birth date">
         <label class="label" for="birthdate">
-            <span><?= $block->escapeHtml(__('Birthdate')) ?></span>
+            <span><?= $ecaper->escapeHtml(__('Birthdate')) ?></span>
         </label>
         <div class="control">
-            <input type="date" name="birth_date" id="birth_date" value="<?= $is_member ? (($member->getBirthDate() != null) ? date_format($member->getBirthDate(),"Y-m-d") : '') : '' ?>" title="<?= $block->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
+            <input type="date" name="birth_date" id="birth_date" value="<?= $is_member ? (($member->getBirthDate() != null) ? date_format($member->getBirthDate(),"Y-m-d") : '') : '' ?>" title="<?= $ecaper->escapeHtmlAttr(__('Birthdate')) ?>" class="input-date">
         </div>
     </div>
 
     <!-- Gender -->
     <?php
     $genders = array(
-        array("id" => 1, "name" => "Male"),
-        array("id" => 2, "name" => "Female"),
-        array("id" => 4, "name" => "Non-binary"),
-        array("id" => 3, "name" => "Don't want to share"),
+        array("id" => 1, "name" => $ecaper->escapeHtmlAttr(__('Male'))),
+        array("id" => 2, "name" => $ecaper->escapeHtmlAttr(__('Female'))),
+        array("id" => 4, "name" => $ecaper->escapeHtmlAttr(__('Non binary'))),
+        array("id" => 3, "name" => $ecaper->escapeHtmlAttr(__("Don't want to share"))),
     )
     ?>
     <div class="loyalty field options">
         <label class="label" for="gender">
-            <span><?= $block->escapeHtml(__('Gender')) ?></span>
+            <span><?= $ecaper->escapeHtml(__('Gender')) ?></span>
         </label>
         <div class="control">
             <?php foreach($genders as $gender ){?>
@@ -81,37 +103,37 @@
     <!-- Address -->
     <div class="loyalty field half">
         <label class="label" for="address">
-            <span><?= $block->escapeHtml(__('Address')) ?></span>
+            <span><?= $ecaper->escapeHtml(__('Address')) ?></span>
         </label>
         <div class="control">
-            <input type="text" name="address" id="address" value="<?= $is_member ? $member->getAddress()->getStreet() : ''  ?>" title="<?= $block->escapeHtmlAttr(__('Address')) ?>" class="input-text">
+            <input type="text" name="address" id="address" value="<?= $is_member ? $member->getAddress()->getStreet() : ''  ?>" title="<?= $ecaper->escapeHtmlAttr(__('Address')) ?>" class="input-text">
         </div>
     </div>
 
     <!-- ZIPCODE -->
     <div class="loyalty field half">
         <label class="label" for="zip_code">
-            <span><?= $block->escapeHtml(__('Zip Code')) ?></span>
+            <span><?= $ecaper->escapeHtml(__('Zip Code')) ?></span>
         </label>
         <div class="control">
-            <input type="text" name="zip_code" id="zip_code" value="<?= $is_member ? $member->getAddress()->getZipCode() : ''  ?>" title="<?= $block->escapeHtmlAttr(__('Zip Code')) ?>" class="input-text">
+            <input type="text" name="zip_code" id="zip_code" value="<?= $is_member ? $member->getAddress()->getZipCode() : ''  ?>" title="<?= $ecaper->escapeHtmlAttr(__('Zip Code')) ?>" class="input-text">
         </div>
     </div>
 
     <!-- CITY -->
     <div class="loyalty field half">
         <label class="label" for="city">
-            <span><?= $block->escapeHtml(__('City')) ?></span>
+            <span><?= $ecaper->escapeHtml(__('City')) ?></span>
         </label>
         <div class="control">
-            <input type="text" name="city" id="city" value="<?= $is_member ? $member->getAddress()->getCity() : ''  ?>" title="<?= $block->escapeHtmlAttr(__('City')) ?>" class="input-text">
+            <input type="text" name="city" id="city" value="<?= $is_member ? $member->getAddress()->getCity() : ''  ?>" title="<?= $ecaper->escapeHtmlAttr(__('City')) ?>" class="input-text">
         </div>
     </div>
 
     <!-- COUNTRY -->
     <div class="loyalty field half">
         <label class="label" for="country">
-            <span><?= $block->escapeHtml(__('Country')) ?></span>
+            <span><?= $ecaper->escapeHtml(__('Country')) ?></span>
         </label>
         <div class="control">
             <input type="hidden" name="country_code" id="country_code" />
@@ -216,7 +238,7 @@
     <?php if (!empty($storeDepartments)) { ?>
         <div class="loyalty field options">
             <label class="label">
-                <span>Department</span>
+                <span><?= $ecaper->escapeHtml(__('Department')) ?></span>
             </label>
             <div class="control">
                 <?php foreach($storeDepartments as $option ){?>
@@ -231,7 +253,7 @@
 
     <div class="loyalty field options consent<?= ($loyaltyHelper->areLoyaltyFieldsMandatory() && !$is_member) ? ' required' : '' ?>">
         <label class="label">
-            <span>Marketing Consent</span>
+            <span><?= $ecaper->escapeHtml(__('Marketing consent')) ?></span>
         </label>
         <div class="control">
             <div class="option">
@@ -243,7 +265,9 @@
                     <?= $is_member ? ($member->getConsent()->getGDPRAccepted() ? 'onclick="consentChange()" checked' : '') : '' ?>
                 >
                 <label for="loyalty_consent" class="label">
-                    <span>I want to join <?= $loyaltyDetails['storeName'] ?>'s loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like. Read our <a target="_blank" href="<?= $loyaltyDetails["privacyPolicyUrl"] ?>">privacy policy here</a> <?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? '*' : '' ?></span>
+                    <span>
+                        <?= sprintf($ecaper->escapeHtml(__("I want to join %s's loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like.")), $loyaltyDetails['storeName']) ?> <?= sprintf($ecaper->escapeHtml(__("Read our <a target='_blank' href='%s'>privacy policy here</a>"), ['a']), $loyaltyDetails["privacyPolicyUrl"]) ?> <?= ($loyaltyHelper->areLoyaltyFieldsMandatory() || $is_member) ? '*' : '' ?>
+                    </span>
                 </label>
             </div>
             <div class="option">
@@ -254,7 +278,7 @@
                     <?= $is_member ? ($member->getConsent()->getSaveOrderHistory() ? 'checked' : '') : '' ?>
                 >
                 <label for="loyalty_consent_order_history" class="label">
-                    <span> I want to get offers and benefits that suit me based on my preferences and purchase history.</span>
+                    <span> <?= $ecaper->escapeHtml(__("I want to get offers and benefits that suit me based on my preferences and purchase history.")) ?></span>
                 </label>
             </div>
             <?php if ($is_member){ ?>
@@ -266,7 +290,7 @@
                         <?= $member->getConsent()->getReceiveSms() ? 'checked' : '' ?>
                     >
                     <label for="loyalty_consent_sms" class="label">
-                        <span>SMS: I want to receive benefits, offers and other marketing electronically in connection with the customer club via SMS.</span>
+                        <span> <?= $ecaper->escapeHtml(__("SMS: I want to receive benefits, offers and other marketing electronically in connection with the customer club via SMS.")) ?></span>
                     </label>
                 </div>
                 <div class="option">
@@ -277,7 +301,7 @@
                         <?= $member->getConsent()->getReceiveEmail() ? 'checked' : '' ?>
                     >
                     <label for="loyalty_consent_email" class="label">
-                        <span>E-mail: I want to receive benefits, offers and other marketing electronically in connection with the customer club by E-mail.</span>
+                        <span> <?= $ecaper->escapeHtml(__("E-mail: I want to receive benefits, offers and other marketing electronically in connection with the customer club by E-mail.")) ?></span>
                     </label>
                 </div>
             <?php } ?>
@@ -314,8 +338,6 @@
                     if(phoneNumberInput.value.length > 0){
                         setActiveItiInstance(event.target);
 
-                        // console.log("phoneNumberInput blur listener", window.activePhoneNumberInput, window.activeCountryCodeInput, window.activeItiInstance);
-
                         let dialCode = window.activeItiInstance.getSelectedCountryData().dialCode;
                         const phoneNumber = event.target.value.replace(/\D/g, '').replace("+" + dialCode, "");
                         if (window.activeItiInstance.getSelectedCountryData().iso2) {
@@ -329,7 +351,7 @@
                         let phoneNumberToSearch = dialCode + phoneNumberInput.value.replace(" ", "");
                         if(window.activeItiInstance.isValidNumber()){
                             if(phoneNumberToSearch !== lastphoneNumberSearched){
-                                setLoyaltyNotification("Looking for this phone number in our loyalty system");
+                                setLoyaltyNotification("<?= $ecaper->escapeHtml(__("Looking for this phone number in our loyalty system")) ?>");
                                 lastphoneNumberSearched = phoneNumberToSearch;
                                 $.ajax({
                                     url: '<?php echo $this->getUrl('loyaltyprogram/member/search'); ?>',
@@ -339,7 +361,7 @@
                                     data : {phoneNumber: phoneNumberToSearch},
                                     success: function (response) {
                                         if(response.success && response.result.is_member){
-                                            setLoyaltyNotification("SMS sent to your phone number with the OTP");
+                                            setLoyaltyNotification("<?= $ecaper->escapeHtml(__("SMS sent to your phone number with the OTP")) ?>");
                                             let memberForm = document.querySelector('#loyaltyForm');
                                             memberForm.setAttribute("member_id", response.result.member_id);
 
@@ -352,13 +374,13 @@
                                                 if(field.classList.contains('required')) field.classList.remove('required');
                                             });
                                         }else{
-                                            setLoyaltyNotification("No member found with that phone number");
+                                            setLoyaltyNotification("<?= $ecaper->escapeHtml(__("No member found with that phone number")) ?>");
                                         }
                                     }
                                 });
                             }
                         }else{
-                            setLoyaltyNotification("Invalid phone number");
+                            setLoyaltyNotification("<?= $ecaper->escapeHtml(__("Invalid phone number")) ?>");
                         }
                     }
                 });
@@ -377,7 +399,7 @@
                         },
                         success: function (response) {
                             if(!response.success) {
-                                setLoyaltyNotification("Invalid OTP");
+                                setLoyaltyNotification("<?= $ecaper->escapeHtml(__("Invalid OTP")) ?>");
                                 return;
                             }
 
@@ -386,8 +408,6 @@
 
                             // populate form fields with member details
                             let member = response.result;
-
-                            console.log(member);
 
                             let customerFirstName = document.querySelector('#firstname');
                             if(customerFirstName.value.length === 0 && member.first_name.length > 0){
@@ -550,7 +570,7 @@
     function consentChange() {
         var gdprConsent = document.getElementById('loyalty_consent');
         if (gdprConsent.checked != true) {
-            let alertSelection = confirm("Are you sure you want to leave our Loyalty Program? You'll lose access to unique discounts, advantages and your membership progress and points.");
+            let alertSelection = confirm("<?= $ecaper->escapeHtml(__("Are you sure you want to leave our Loyalty Program? You'll lose access to unique discounts, advantages and your membership progress and points.")) ?>");
             if (!alertSelection) {
                 gdprConsent.checked = true;
             }

@@ -4,6 +4,8 @@ namespace Diller\LoyaltyProgram\Plugin\Checkout;
 
 use Diller\LoyaltyProgram\Helper\Data;
 use Magento\Checkout\Block\Checkout\LayoutProcessorInterface;
+use Magento\Framework\App\ObjectManager;
+use Magento\Framework\Escaper;
 
 class DillerConsent implements LayoutProcessorInterface{
     /**
@@ -11,8 +13,11 @@ class DillerConsent implements LayoutProcessorInterface{
      */
     protected Data $_loyaltyHelper;
 
+    protected Escaper $escaper;
+
     public function __construct(Data $loyaltyHelper) {
         $this->_loyaltyHelper = $loyaltyHelper;
+        $this->escaper = ObjectManager::getInstance()->get(Escaper::class);
     }
 
     public function process($jsLayout){
@@ -34,7 +39,7 @@ class DillerConsent implements LayoutProcessorInterface{
                 'customEntry' => null,
                 'template' => 'ui/form/components/button/simple',
                 'elementTmpl' => 'ui/form/element/checkbox',
-                'label' => "I want to join ".$loyaltyDetails['storeName']."'s loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like.",
+                'label' => sprintf($this->escaper->escapeHtml(__("I want to join %s's loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like.")), $loyaltyDetails['storeName']),
                 'id' => $attributeCode,
                 'value' => ($is_member && $member->getConsent()->getGdprAccepted()) ? true : ''
             ],
@@ -57,7 +62,7 @@ class DillerConsent implements LayoutProcessorInterface{
                 'customEntry' => null,
                 'template' => 'ui/form/components/button/simple',
                 'elementTmpl' => 'ui/form/element/checkbox',
-                'label' => "I want to get offers and benefits that suit me based on my preferences and purchase history.",
+                'label' => $this->escaper->escapeHtml(__("I want to get offers and benefits that suit me based on my preferences and purchase history.")),
                 'id' => $attributeCode,
                 'value' => ($is_member && $member->getConsent()->getSaveOrderHistory()) ? true : ''
             ],

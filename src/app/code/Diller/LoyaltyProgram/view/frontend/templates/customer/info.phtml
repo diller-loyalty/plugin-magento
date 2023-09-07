@@ -2,6 +2,8 @@
 /** @var Member $block */
 use Diller\LoyaltyProgram\Block\Frontend\Member;
 
+/** @var $escaper \Magento\Framework\Escaper */
+
 $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 
 // member details
@@ -16,10 +18,10 @@ if($customer = $block->getCustomer()){
         $gender = $member->getGender();
         switch ($member->getGender()) {
             case "NotShared":
-                $gender = "Don't want to share";
+                $gender = $escaper->escapeHtml(__("Don't want to share"));
                 break;
             case "NonBinary":
-                $gender = "Non binary";
+                $gender = $escaper->escapeHtml(__("Non binary"));
                 break;
             default:
                 $gender = $member->getGender();
@@ -31,33 +33,33 @@ if($customer = $block->getCustomer()){
 $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 ?>
 
-<?php if(!$is_member) { ?>
-    To enroll to our Loyalty program "<b><?= $loyaltyDetails['storeName'] ?></b>" and enjoy the benefits, please <a href="/customer/account/edit/">click here</a>
-<?php }else{ ?>
+<?php if(!$is_member) {
+    echo sprintf($escaper->escapeHtml(__("To enroll to our Loyalty program <b>%s</b> and enjoy the benefits, please <a href='/customer/account/edit/'>click here</a>", ['b','a'])), $loyaltyDetails['storeName']);
+}else{ ?>
     <div class="diller-container member-info id_<?= $member->getId() ?>">
         <h2 class="page-title">
-            <span class="base" data-ui-id="page-title-wrapper">Personal details</span>
+            <span class="base" data-ui-id="page-title-wrapper"><?= $escaper->escapeHtml(__('Personal details')) ?></span>
         </h2>
         <hr>
         <div>
             <ul>
-                <li><strong>Name</strong> <?= $member->getFirstName() ?> <?= $member->getLastName() ?></li>
-                <li><strong>Phone number</strong> <?= $member->getPhone()->getCountryCode() ?> <?= $member->getPhone()->getNumber() ?></li>
-                <li><strong>Email</strong> <?= $member->getEmail() ?></li>
-                <li><strong>Gender</strong> <?= $gender ?? '' ?></li>
-                <li><strong>Address</strong> <?= $member->getAddress()->getStreet() ?><br><?= $member->getAddress()->getZipCode() ?> <?= $member->getAddress()->getCity() ?> - <?= $member->getAddress()->getCountryCode() ?></li>
-                <li><strong>Birthdate</strong> <?= ($member->getBirthDate() != null) ? date_format($member->getBirthDate(),"d-m-Y") : 'N/A' ?></li>
-                <li><strong>Marketing consent</strong>
+                <li><strong><?= $escaper->escapeHtml(__('Name')) ?></strong> <?= $member->getFirstName() ?> <?= $member->getLastName() ?></li>
+                <li><strong><?= $escaper->escapeHtml(__('Phone number')) ?></strong> <?= $member->getPhone()->getCountryCode() ?> <?= $member->getPhone()->getNumber() ?></li>
+                <li><strong><?= $escaper->escapeHtml(__('Email')) ?></strong> <?= $member->getEmail() ?></li>
+                <li><strong><?= $escaper->escapeHtml(__('Gender')) ?></strong> <?= $gender ?? '' ?></li>
+                <li><strong><?= $escaper->escapeHtml(__('Address')) ?></strong> <?= $member->getAddress()->getStreet() ?><br><?= $member->getAddress()->getZipCode() ?> <?= $member->getAddress()->getCity() ?> - <?= $member->getAddress()->getCountryCode() ?></li>
+                <li><strong><?= $escaper->escapeHtml(__('Birthdate')) ?></strong> <?= ($member->getBirthDate() != null) ? date_format($member->getBirthDate(),"d-m-Y") : 'N/A' ?></li>
+                <li><strong><?= $escaper->escapeHtml(__('Marketing consent')) ?></strong>
                     <ul>
                         <li>
-                            <strong>Sms</strong> <?= $member->getConsent()->getReceiveSms() ? 'Yes' : "No" ?><br>
-                            <strong>Email</strong> <?= $member->getConsent()->getReceiveEmail() ? 'Yes' : "No" ?><br>
-                            <strong>Order history consent</strong> <?= $member->getConsent()->getSaveOrderHistory() ? 'Yes' : "No" ?><br>
-                            <strong>GDPR accepted</strong> <?= $member->getConsent()->getGDPRAccepted() ? 'Yes' : "No" ?>
+                            <strong><?= $escaper->escapeHtml(__('Sms')) ?></strong> <?= $member->getConsent()->getReceiveSms() ? $escaper->escapeHtml(__('Yes')) : $escaper->escapeHtml(__('No')) ?><br>
+                            <strong><?= $escaper->escapeHtml(__('Email')) ?></strong> <?= $member->getConsent()->getReceiveEmail() ? $escaper->escapeHtml(__('Yes')) : $escaper->escapeHtml(__('No')) ?><br>
+                            <strong><?= $escaper->escapeHtml(__('Order history consent')) ?></strong> <?= $member->getConsent()->getSaveOrderHistory() ? $escaper->escapeHtml(__('Yes')) : $escaper->escapeHtml(__('No')) ?><br>
+                            <strong><?= $escaper->escapeHtml(__('GDPR accepted')) ?></strong> <?= $member->getConsent()->getGDPRAccepted() ? $escaper->escapeHtml(__('Yes')) : $escaper->escapeHtml(__('No')) ?>
                         </li>
                     </ul>
                 </li>
-                <li class="button"><button id="edit">Edit personal details</button></li>
+                <li class="button"><button id="edit"><?= $escaper->escapeHtml(__('Edit personal details')) ?></button></li>
             </ul>
         </div>
     </div>

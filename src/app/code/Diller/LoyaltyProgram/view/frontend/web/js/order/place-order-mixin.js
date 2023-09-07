@@ -36,9 +36,6 @@ define([
                 var diller_consent = document.querySelector('[name="diller_consent"]').checked ?? false;
                 var diller_order_history_consent = document.querySelector('[name="diller_order_history_consent"]').checked ?? 0;
 
-                console.log('diller_consent: ' + diller_consent)
-                console.log('diller_order_history_consent: ' + diller_order_history_consent);
-
                 if (diller_consent) {
                     var payload = {
                         'cartId': quoteId,

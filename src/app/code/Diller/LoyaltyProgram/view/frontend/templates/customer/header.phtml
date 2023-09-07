@@ -29,7 +29,7 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
             <p onclick="toLoyaltyProgramPage()"><?= $loyaltyDetails->getStoreName() ?></p>
         <?php } ?>
     <?php } else { ?>
-        <p onclick="<?= empty($customer) ? 'toRegistrationPage()' : 'toUpdateAccountPage()'?>">Join our Loyalty Program!</p>
+        <p onclick="<?= empty($customer) ? 'toRegistrationPage()' : 'toUpdateAccountPage()'?>"><?= $escaper->escapeHtml(__('Join our Loyalty Program!')) ?></p>
     <?php } ?>
 </div>
 <script>

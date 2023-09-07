@@ -17,10 +17,10 @@ Some helpful dev commands
 <br>
 
 **// AFTER CHANGING ANY MODULE STATUS**
-<br>bin/magento setup:upgrade && bin/magento setup:static-content:deploy -f
-
-**// AND**
-<br>bin/magento setup:di:compile && sudo chmod 777 -R var/ pub/
+<br>
+bin/magento setup:upgrade<br>
+bin/magento setup:di:compile<br>
+sudo chmod 777 -R var/ pub/
 
 **// CLEAN CACHE**
 <br>bin/magento cache:clean && bin/magento cache:flush

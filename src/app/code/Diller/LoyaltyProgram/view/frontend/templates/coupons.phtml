@@ -2,6 +2,8 @@
 /** @var Member $block */
 use Diller\LoyaltyProgram\Block\Frontend\Member;
 
+/** @var $escaper \Magento\Framework\Escaper */
+
 $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 
 // member details
@@ -30,8 +32,8 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 <?php if($is_member){ ?>
     <div class="diller-container coupons">
         <h3 class="page-title">
-            <span id="diller-coupons-container-title-cart" style="display:none" class="base" data-ui-id="page-title-wrapper"><b><?= $loyaltyDetails['storeName'] ?></b> discount codes</span>
-            <span id="diller-coupons-container-title-loyalty-page" class="base" data-ui-id="page-title-wrapper">Coupons</span>
+            <span id="diller-coupons-container-title-cart" style="display:none" class="base" data-ui-id="page-title-wrapper"><b><?= $loyaltyDetails['storeName'] ?></b> <?= $block->escapeHtml(__('discount codes')) ?></span>
+            <span id="diller-coupons-container-title-loyalty-page" class="base" data-ui-id="page-title-wrapper"><?= $escaper->escapeHtml(__('Coupons')) ?></span>
         </h3>
         <hr>
         <?php if(!empty($valid_coupons)) { ?>
@@ -55,18 +57,18 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
                                     </span>
                                 </div>
                                 <div class="diller-coupon-usage">
-                                    <b><?=$usages_left ?></b> <?= $usages_left > 1 ? 'usages' : 'usage' ?> left
+                                    <b><?=$usages_left ?></b> <?= $usages_left > 1 ? $escaper->escapeHtml(__('usages left')) : $escaper->escapeHtml(__('usage left')) ?>
                                 </div>
                             </div>
                             <div class="diller-coupon-inner-bottom">
-                                <p>Promo code: <b><?= $coupon->getCode() ?></b></p>
+                                <p><?= $escaper->escapeHtml(__('Promo code')) ?>: <b><?= $coupon->getCode() ?></b></p>
                             </div>
                         </div>
                     <?php }
                 } ?>
             </div>
         <?php } else { ?>
-            <p>No coupons found</p>
+            <p><?= $escaper->escapeHtml(__('No coupons found')) ?></p>
         <?php } ?>
     </div>
     <style>
