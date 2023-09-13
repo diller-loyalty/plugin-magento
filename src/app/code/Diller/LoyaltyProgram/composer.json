@@ -12,8 +12,7 @@
     "require": {
         "php": ">=7.4",
         "diller-loyalty/php-sdk": ">=0.0.1",
-        "giggsey/libphonenumber-for-php": "^8.13.9",
-        "vlucas/phpdotenv": ">=v5.5.0"
+        "giggsey/libphonenumber-for-php": "^8.13.9"
     },
     "autoload": {
         "files": [

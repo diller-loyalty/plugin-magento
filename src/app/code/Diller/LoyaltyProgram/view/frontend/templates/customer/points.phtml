@@ -13,7 +13,6 @@
         if($member){
             $is_member = $member->getConsent()->getGdprAccepted();
         }
-        if($is_member) $coupons = $block->getMemberCoupons($member['id']);
     }
 
     // store details

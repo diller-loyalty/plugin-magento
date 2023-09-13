@@ -4,6 +4,7 @@
         <dillerloyalty>
             <settings>
                 <loyalty_program_enabled>No</loyalty_program_enabled>
+                <test_environment>No</test_environment>
                 <loyalty_fields_mandatory>Yes</loyalty_fields_mandatory>
                 <reserve_stamp_cards>No</reserve_stamp_cards>
             </settings>

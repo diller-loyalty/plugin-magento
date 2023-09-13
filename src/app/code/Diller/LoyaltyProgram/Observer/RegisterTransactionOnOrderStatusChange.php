@@ -87,7 +87,7 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
 
                 $orderCreatedAt = $this->timezone->date(new \DateTime($order->getCreatedAt()));
                 $transaction = array(
-                    "external_id" => "magento_#" . $order->getId(),
+                    "external_id" => "mg_#" . $order->getId(),
                     "created_at" => $orderCreatedAt->format(DATE_ATOM),
                     "payment_details" => array(
                         array(

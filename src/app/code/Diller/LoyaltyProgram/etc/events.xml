@@ -16,6 +16,7 @@
     </event>
 
     <event name="sales_quote_collect_totals_after">
-        <observer name="validate_coupons_and_stamp_cards" instance="Diller\LoyaltyProgram\Observer\ValidateCouponsAndStampCardsOnCartUpdate"/>
+        <observer name="validate_coupons" instance="Diller\LoyaltyProgram\Observer\ValidateCouponsOnCartUpdate"/>
+        <observer name="validate_stamp_cards" instance="Diller\LoyaltyProgram\Observer\ValidateStampCardsOnCartUpdate"/>
     </event>
 </config>

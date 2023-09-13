@@ -151,14 +151,10 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                     "number" => $phone_national_number
                 ),
                 "consent" => array(
-                    "gdpr_accepted" => false,
-                    "receive_sms" => false,
-                    "receive_email" => false,
-                    "save_order_history" => false
+                    "gdpr_accepted" => key_exists('loyalty_consent', $params),
+                    "save_order_history" => key_exists('loyalty_consent_order_history', $params)
                 ),
                 "origin" => array(
-                    "system_id" => "magento_" . $order->getStore()->getId(),
-                    "employee_id" => "",
                     "department_id" => $this->loyaltyHelper->getSelectedDepartment(),
                     "channel" => "OnlineStore"
                 ),
@@ -166,10 +162,9 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                 "segments" => $member_segments
             );
 
-            if(array_key_exists('loyalty_consent', $params)) $member_object["consent"]["gdpr_accepted"] = true;
-            if(array_key_exists('loyalty_consent_sms', $params)) $member_object["consent"]["receive_sms"] = true;
-            if(array_key_exists('loyalty_consent_email', $params)) $member_object["consent"]["receive_email"] = true;
-            if(array_key_exists('loyalty_consent_order_history', $params)) $member_object["consent"]["save_order_history"] = true;
+            $member_object["consent"]["receive_sms"] = key_exists('loyalty_consent_sms', $params);
+            $member_object["consent"]["receive_email"] = key_exists('loyalty_consent_email', $params);
+
             if(array_key_exists('birth_date', $params)) $member_object['birth_date'] = !empty($params['birth_date']) ? date('Y-m-d', strtotime($params['birth_date'])) : null;
             if(array_key_exists('gender', $params)) $member_object['gender'] = $params['gender'];
 
@@ -181,35 +176,46 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                 "country_code" => strtoupper($country),
             );
 
-            // register member in Diller
-            if(!$is_member){
-                $member_object["consent"]["receive_sms"] = true;
-                $member_object["consent"]["receive_email"] = true;
-                try {
-                    $member = $this->loyaltyHelper->registerMember(json_encode($member_object));
-                }
-                catch (\DillerAPI\ApiException $e){
-                    return false;
-                }
-            }
-            else{
-                // update/delete member
+            // update/delete member
+            if($is_member){
                 try {
                     // Set the communications consents as true if member didn't had GDPR accepted before this
                     if(!$member->getConsent()->getGdprAccepted() && $member_object['consent']['gdpr_accepted']){
                         $member_object["consent"]["receive_sms"] = true;
                         $member_object["consent"]["receive_email"] = true;
                     }
-                    if($this->loyaltyHelper->updateMember($member['id'], json_encode($member_object))) return true;
                     if(!$member_object['consent']['gdpr_accepted']){
-                        if($this->loyaltyHelper->deleteMember($member['id'])) return true;
+                        if($this->loyaltyHelper->deleteMember($member->getId())){
+                            $this->loyaltyHelper->addMemberIdToCustomer($customer->getId(), null);
+                            return true;
+                        }
                     }
-
+                    $member = $this->loyaltyHelper->updateMember($member->getId(), json_encode($member_object));
                 }
                 catch (\DillerAPI\ApiException $e){
+                    // TODO: return error message
+                    return false;
+                }
+            }else{
+                // register member in Diller
+                try {
+                    $member_object["consent"]["receive_sms"] = true;
+                    $member_object["consent"]["receive_email"] = true;
+                    $member = $this->loyaltyHelper->registerMember(json_encode($member_object));
+                }
+                catch (\DillerAPI\ApiException $e){
+                    // TODO: return error message
                     return false;
                 }
             }
+
+            // Save member id in relation to customer
+            if($member){
+                if($customer->getCustomAttribute('diller_member_id') !== $member->getId()){
+                    $this->loyaltyHelper->addMemberIdToCustomer($customer->getId(), $member->getId());
+                }
+            }
+
         }
 
         return true;

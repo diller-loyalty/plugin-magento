@@ -1,6 +1,7 @@
 <?php
 /** @var Member $block */
 use Diller\LoyaltyProgram\Block\Frontend\Member;
+use Magento\SalesRule\Model\Data\Rule;
 
 /** @var $escaper \Magento\Framework\Escaper */
 
@@ -11,15 +12,18 @@ $is_member = false;
 $valid_coupons = [];
 if($customer = $block->getCustomer()){
     $member = $loyaltyHelper->searchMemberByCustomerId($customer->getId());
-    if($member){
-        $is_member = $member->getConsent()->getGdprAccepted();
-    }
-    if($is_member && $coupons = $block->getMemberCoupons($member['id'])){
+    if($member) $is_member = $member->getConsent()->getGdprAccepted();
+
+    if($is_member && $coupons = $block->getMemberCoupons($member->getID())){
         foreach ($coupons as $coupon) {
-            foreach ($coupon->getExternalIds() as $price_rule_id){
-                if($price_rule_found = $loyaltyHelper->getPriceRule($price_rule_id->getExternalId(), $coupon->getTitle(), $coupon->getCode())){
-                    $valid_coupons[] = $coupon;
-                    continue 2;
+            foreach ($coupon->getExternalIds() as $coupon_external_id){
+                if($price_rule = $loyaltyHelper->getPriceRule($coupon_external_id->getExternalId(), $coupon->getTitle(), $coupon->getCode())){
+                    // validate coupon/price_rule dates
+                    if(($price_rule->getToDate() === null || $price_rule->getToDate() > new DateTime()) &&
+                        ($coupon->getValidTo()->getTimestamp() > time())){
+                        $valid_coupons[] = $coupon;
+                        continue 2;
+                    }
                 }
             }
         }

@@ -1,40 +1,39 @@
 <?php
-/** @var Member $block */
-use Diller\LoyaltyProgram\Block\Frontend\Member;
+    /** @var Member $block */
+    use Diller\LoyaltyProgram\Block\Frontend\Member;
 
-/** @var $escaper \Magento\Framework\Escaper */
+    /** @var $escaper \Magento\Framework\Escaper */
 
-$loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
+    $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 
-// member details
-$is_member = false;
-if($customer = $block->getCustomer()){
-    $member = $loyaltyHelper->searchMemberByCustomerId($customer->getId());
-    if($member){
-        $is_member = $member->getConsent()->getGdprAccepted();
-    }
-    if($is_member){
-        $coupons = $block->getMemberCoupons($member['id']);
-        $gender = $member->getGender();
-        switch ($member->getGender()) {
-            case "NotShared":
-                $gender = $escaper->escapeHtml(__("Don't want to share"));
-                break;
-            case "NonBinary":
-                $gender = $escaper->escapeHtml(__("Non binary"));
-                break;
-            default:
-                $gender = $member->getGender();
+    // member details
+    $is_member = false;
+    if($customer = $block->getCustomer()){
+        $member = $loyaltyHelper->searchMemberByCustomerId($customer->getId());
+        if($member){
+            $is_member = $member->getConsent()->getGdprAccepted();
+        }
+        if($is_member){
+            $gender = $member->getGender();
+            switch ($member->getGender()) {
+                case "NotShared":
+                    $gender = $escaper->escapeHtml(__("Don't want to share"));
+                    break;
+                case "NonBinary":
+                    $gender = $escaper->escapeHtml(__("Non binary"));
+                    break;
+                default:
+                    $gender = $member->getGender();
+            }
         }
     }
-}
 
-// store details
-$loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
+    // store details
+    $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 ?>
 
 <?php if(!$is_member) {
-    echo sprintf($escaper->escapeHtml(__("To enroll to our Loyalty program <b>%s</b> and enjoy the benefits, please <a href='/customer/account/edit/'>click here</a>", ['b','a'])), $loyaltyDetails['storeName']);
+    echo sprintf($escaper->escapeHtml(__("To enroll to our Loyalty program <strong>%s</strong> and enjoy the benefits, please <a href='/customer/account/edit/'>click here</a>"), ['a', 'strong']), $loyaltyDetails['storeName']);
 }else{ ?>
     <div class="diller-container member-info id_<?= $member->getId() ?>">
         <h2 class="page-title">

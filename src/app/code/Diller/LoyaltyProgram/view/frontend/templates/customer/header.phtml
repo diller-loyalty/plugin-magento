@@ -1,24 +1,24 @@
 <?php
-use Diller\LoyaltyProgram\Helper\Data;
-use Diller\LoyaltyProgram\Block\Frontend\Member;
+    use Diller\LoyaltyProgram\Helper\Data;
+    use Diller\LoyaltyProgram\Block\Frontend\Member;
 
-/** @var Member $block */
-/** @var \Magento\Framework\Escaper $escaper */
+    /** @var Member $block */
+    /** @var \Magento\Framework\Escaper $escaper */
 
-/** @var Data $loyaltyHelper */
-$loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
+    /** @var Data $loyaltyHelper */
+    $loyaltyHelper = $this->helper('Diller\LoyaltyProgram\Helper\Data');
 
-// member details
-$is_member = false;
-if($customer = $block->getCustomer()){
-    $member = $loyaltyHelper->searchMemberByCustomerId($customer->getId());
-    if($member){
-        $is_member = $member->getConsent()->getGdprAccepted();
+    // member details
+    $is_member = false;
+    if($customer = $block->getCustomer()){
+        $member = $loyaltyHelper->searchMemberByCustomerId($customer->getId());
+        if($member){
+            $is_member = $member->getConsent()->getGdprAccepted();
+        }
     }
-}
 
-// store details
-$loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
+    // store details
+    $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 ?>
 
 <div class="loyalty-points">
@@ -40,7 +40,7 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
         window.location.replace("/customer/account/create/");
     }
     function toUpdateAccountPage(){
-        window.location.replace("/customer/account/create/");
+        window.location.replace("/customer/account/edit/");
     }
 </script>
 <style>

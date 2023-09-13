@@ -18,7 +18,7 @@ use Magento\SalesRule\Model\CouponGenerator;
 use Magento\SalesRule\Model\RuleFactory;
 use Magento\SalesRule\Model\RuleRepository;
 
-class ValidateCouponsAndStampCardsOnCartUpdate implements ObserverInterface{
+class ValidateStampCardsOnCartUpdate implements ObserverInterface{
     protected Customer $customer;
     protected Data $loyaltyHelper;
     protected Registry $_coreRegistry;

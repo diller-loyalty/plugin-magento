@@ -21,7 +21,7 @@ class StoreDepartments implements OptionSourceInterface{
      */
     public function toOptionArray(): array{
         $result = [];
-        if($this->loyaltyHelper->getModuleStatus()){
+        if($this->loyaltyHelper->isEnabled()){
             $storeDepartments = $this->loyaltyHelper->getStoreDepartments();
             if(is_array($storeDepartments)){
                 foreach ($storeDepartments as $department){

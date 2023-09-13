@@ -2,8 +2,6 @@
 
 namespace Diller\LoyaltyProgram\Helper;
 
-use Dotenv\Dotenv;
-
 use DillerAPI\DillerAPI;
 use DillerAPI\ApiException;
 use DillerAPI\Configuration;
@@ -76,9 +74,6 @@ class Data extends AbstractHelper{
         RuleRepository $ruleRepository,
         ObjectManagerInterface $_objectManager) {
 
-        $dotenv = Dotenv::createImmutable(dirname(__DIR__, 1));
-        $dotenv->load();
-
         $this->scopeConfig = $scopeConfig;
         $this->customer = $customer;
         $this->customerFactory = $customerFactory;
@@ -89,9 +84,10 @@ class Data extends AbstractHelper{
 
         $configs = clone Configuration::getDefaultConfiguration();
         // to set module to production mode
-        // $configs->setHost("https://api.diller.app.");
-        // TODO: give option in backoffice to choose environment
-        define("LOYALTYPROGRAM_ENVIRONMENT", "DEV");
+        $configs->setHost("https://api.diller.app");
+        if($this->scopeConfig->getValue('dillerloyalty/settings/test_environment', ScopeInterface::SCOPE_STORE)){
+            $configs->setHost("https://api.prerelease.dillerapp.com");
+        }
 
         $configs->setUserAgent("DillerLoyaltyPlugin/Magento v1.0.0");
 
@@ -99,8 +95,15 @@ class Data extends AbstractHelper{
 
         if($this->store_uid){
             $api_key = $this->scopeConfig->getValue('dillerloyalty/settings/api_key', ScopeInterface::SCOPE_STORE);
-            $this->dillerAPI = new DillerAPI($this->store_uid, $api_key);
+            try {
+                $this->dillerAPI = new DillerAPI($this->store_uid, $api_key, $configs);
+            }
+            catch (Exception $ex){
+                $this->store_uid = false;
+            }
         }
+
+        // TODO: add test credentials button and make sure the "loyalty_program_enabled" can only be set as enabled if the credentials are validated
         parent::__construct($context);
     }
 
@@ -110,7 +113,8 @@ class Data extends AbstractHelper{
         return true;
     }
 
-    public function getModuleStatus(): bool{
+    public function isEnabled(): bool{
+        if(!$this->store_uid) return false;
         return $this->scopeConfig->getValue('dillerloyalty/settings/loyalty_program_enabled', ScopeInterface::SCOPE_STORE) ?? 0;
     }
 
@@ -330,9 +334,8 @@ class Data extends AbstractHelper{
         if($customer){
             // search member with diller_member_id customer attribute
             if($attribute = $customer->getCustomAttribute('diller_member_id')){
-
                 if($member = $this->getMemberById($attribute->getValue())){
-                    return $member;
+                    if($member->getConsent()->getGdprAccepted()) return $member;
                 }
             }
 
@@ -343,14 +346,9 @@ class Data extends AbstractHelper{
                     return $result[0];
                 }
             }
-
-            // search member by customer email
-            $result = $this->getMember($customer->getEmail());
-            if(!empty($result)){
-                $this->addMemberIdToCustomer($id, $result[0]->getID());
-                return $result[0];
-            }
         }
+
+        if($customer->getCustomAttribute('diller_member_id') !== null) $this->addMemberIdToCustomer($id, null);
         return false;
     }
 
@@ -603,52 +601,5 @@ class Data extends AbstractHelper{
             }
         }
         return $validated_stamp_cards;
-    }
-
-    /**
-     * Decrypts the value passed in.
-     * This function is backwards compatible and will support old encrypted values.
-     * However, it will decrypt mainly the improved (but not perfect) values that will
-     * be encrypted using { @see encrypt_value() }
-     *
-     * This function is **not** cryptographically strong, as the Key and IV are static,
-     * but returns a small value which is handy for sending SMS messages with short links.
-     *
-     *
-     * @param $data string Encrypted data
-     *
-     * @return string|bool The decrypted value or false if unsuccessful
-     */
-    public function decrypt_value($data, $passphrase = false){
-        $cipher_algo = "aes-256-cbc";
-
-        // Check for double base64 encoding
-        if(($decoded_value_round1 = base64_decode($data, true))){
-            if(base64_decode($decoded_value_round1, true)){
-                $data = $decoded_value_round1;
-            }
-        }
-        $iv = $_ENV[strtoupper(LOYALTYPROGRAM_ENVIRONMENT . "_encryption_iv")];
-        $passphrase = $_ENV[strtoupper(LOYALTYPROGRAM_ENVIRONMENT . "_encryption_key")];
-
-        // First, try hash() function with $binary = false (default)
-        // When $binary = TRUE, outputs raw binary data. FALSE outputs lowercase hexits
-        $key = hash('sha256', $passphrase);
-
-        // iv – encrypt method AES-256-CBC expects 16 bytes – else you will get a warning
-        $iv_key = substr(hash('sha256', $iv), 0, 16);
-
-        if(!($result = openssl_decrypt($data, $cipher_algo, $key, 0, $iv_key)) || !mb_detect_encoding($result, 'auto', true)){
-
-            // This will also enable raw binary data output, which will return exactly 256 bits
-            // This way we can also decrypt/encrypt the same data directly in MySQL using "AES_ENCRYPT()" and "AES_DECRYPT()",
-            // which is useful for backward compatible implementations outside the PHP realm eg. automated tests, .Net code
-            $key = hash('sha256', $passphrase, true);
-            $iv_key = substr(hash('sha256', $iv, true), 0, 16);
-
-            return openssl_decrypt($data, $cipher_algo, $key, 0, $iv_key);
-        }
-
-        return $result;
     }
 }
