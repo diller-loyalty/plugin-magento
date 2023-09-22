@@ -19,140 +19,142 @@
     $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
     $membershipLevels = $loyaltyHelper->getStoreMembershipLevels();
 ?>
-<?php if($is_member && $loyaltyDetails['pointsSystem']['enabled']) { ?>
-    <div class="diller-container points">
-        <h2 class="page-title">
-            <span class="base" data-ui-id="page-title-wrapper"><?= $escaper->escapeHtml(__('Points')) ?></span>
-        </h2>
-        <hr>
-        <div>
-            <span class=""><?= $escaper->escapeHtml(__('My level')) ?>: <span><b><?= $member['membershipDetail']['levelTitle'] ?></b></span></span>
-            <br>
-            <span>
-                <?= $escaper->escapeHtml(__('Points for use')) ?>:
+<?php if($loyaltyDetails) { ?>
+    <?php if($is_member && $loyaltyDetails['pointsSystem']['enabled']) { ?>
+        <div class="diller-container points">
+            <h2 class="page-title">
+                <span class="base" data-ui-id="page-title-wrapper"><?= $escaper->escapeHtml(__('Points')) ?></span>
+            </h2>
+            <hr>
+            <div>
+                <span class=""><?= $escaper->escapeHtml(__('My level')) ?>: <span><b><?= $member['membershipDetail']['levelTitle'] ?></b></span></span>
+                <br>
                 <span>
-                    <b><?= $member['membershipDetail']['points'] ?> <?= $escaper->escapeHtml(__('points')) ?></b>
-                    <small></small>
+                    <?= $escaper->escapeHtml(__('Points for use')) ?>:
+                    <span>
+                        <b><?= $member['membershipDetail']['points'] ?> <?= $escaper->escapeHtml(__('points')) ?></b>
+                        <small></small>
+                    </span>
                 </span>
-            </span>
-            <br>
-            <span>
-                <?= $escaper->escapeHtml(__('Points till next level')) ?> (<?= $member['membershipDetail']['nextLevelTitle'] ?>):
-                <span><b><?= $member['membershipDetail']['remainingPoints'] ?> <?= $escaper->escapeHtml(__('points')) ?></b></span>
-            </span>
+                <br>
+                <span>
+                    <?= $escaper->escapeHtml(__('Points till next level')) ?> (<?= $member['membershipDetail']['nextLevelTitle'] ?>):
+                    <span><b><?= $member['membershipDetail']['remainingPoints'] ?> <?= $escaper->escapeHtml(__('points')) ?></b></span>
+                </span>
+            </div>
+
+            <div class="diller-membership-progress">
+                <div class="diller-membership-progress-points">
+                    <?php
+                        $max_points = end($membershipLevels)['points'];
+                        foreach($membershipLevels as $level){
+                            if ($max_points < $level['points']) $max_points = $level['points'];
+                            echo "<div data-points='".$level['points']."'><b>" . $level['name'] . '</b><br>' . $level['points'] . '</div>';
+                        }
+                    ?>
+                </div>
+                <div class="diller-membership-progress-bar">
+                    <div class="diller-membership-progress-bar-indicator" style="width:calc(<?= ((100*$member['membershipDetail']['points'])/$max_points) ?>% - 14px);"><?php if($member['membershipDetail']['points'] > 0){ ?><span><?=$member['membershipDetail']['points']?></span><?php } ?></div>
+                </div>
+            </div>
         </div>
 
-        <div class="diller-membership-progress">
-            <div class="diller-membership-progress-points">
-                <?php
-                    $max_points = end($membershipLevels)['points'];
-                    foreach($membershipLevels as $level){
-                        if ($max_points < $level['points']) $max_points = $level['points'];
-                        echo "<div data-points='".$level['points']."'><b>" . $level['name'] . '</b><br>' . $level['points'] . '</div>';
-                    }
-                ?>
-            </div>
-            <div class="diller-membership-progress-bar">
-                <div class="diller-membership-progress-bar-indicator" style="width:calc(<?= ((100*$member['membershipDetail']['points'])/$max_points) ?>% - 14px);"><?php if($member['membershipDetail']['points'] > 0){ ?><span><?=$member['membershipDetail']['points']?></span><?php } ?></div>
-            </div>
-        </div>
-    </div>
+        <script>
+            let membership_levels_elements = document.querySelectorAll('.diller-membership-progress-points div');
+            let membership_levels_points = [];
+            membership_levels_elements.forEach((level) => {
+                membership_levels_points.push(parseInt(level.getAttribute("data-points")));
+            });
+            membership_levels_points.sort(compareNumbers);
+            membership_levels_elements.forEach((level) => {
+                level.style.left = 100*level.getAttribute("data-points")/membership_levels_points[membership_levels_points.length - 1] + '%';
+            });
+            function compareNumbers(a, b) {
+                return a - b;
+            }
+        </script>
 
-    <script>
-        let membership_levels_elements = document.querySelectorAll('.diller-membership-progress-points div');
-        let membership_levels_points = [];
-        membership_levels_elements.forEach((level) => {
-            membership_levels_points.push(parseInt(level.getAttribute("data-points")));
-        });
-        membership_levels_points.sort(compareNumbers);
-        membership_levels_elements.forEach((level) => {
-            level.style.left = 100*level.getAttribute("data-points")/membership_levels_points[membership_levels_points.length - 1] + '%';
-        });
-        function compareNumbers(a, b) {
-            return a - b;
-        }
-    </script>
+        <style>
+            .diller-container{
+                margin: 0 0 50px;
+                position: relative;
+                float: left;
+                width: 100%;
+            }
 
-    <style>
-        .diller-container{
-            margin: 0 0 50px;
-            position: relative;
-            float: left;
-            width: 100%;
-        }
+            /* Points progressbar */
+            .diller-membership-progress {
+                display: flex;
+                margin: 25px 0;
+                flex-direction: column;
+                flex-flow: column-reverse;
+            }
 
-        /* Points progressbar */
-        .diller-membership-progress {
-            display: flex;
-            margin: 25px 0;
-            flex-direction: column;
-            flex-flow: column-reverse;
-        }
+            .diller-membership-progress-points{
+                display: inline;
+                float: left;
+                width: 100%;
+            }
 
-        .diller-membership-progress-points{
-            display: inline;
-            float: left;
-            width: 100%;
-        }
+            .diller-membership-progress-points > div{
+                position: absolute;
+                text-align: center;
+                width: auto;
+            }
 
-        .diller-membership-progress-points > div{
-            position: absolute;
-            text-align: center;
-            width: auto;
-        }
+            .diller-membership-progress-points > div:first-child {
+                left: 0;
+            }
+            .diller-membership-progress-points > div:last-child {
+                right: 0;
+                left: unset !important;
+            }
 
-        .diller-membership-progress-points > div:first-child {
-            left: 0;
-        }
-        .diller-membership-progress-points > div:last-child {
-            right: 0;
-            left: unset !important;
-        }
+            .diller-membership-progress-bar {
+                color: #fff;
+                background-color: #ededed;
+                border-radius: 10px;
+                padding: 0;
+                width: 100%;
+                overflow: hidden;
+                margin: 0 0 10px;
+            }
 
-        .diller-membership-progress-bar {
-            color: #fff;
-            background-color: #ededed;
-            border-radius: 10px;
-            padding: 0;
-            width: 100%;
-            overflow: hidden;
-            margin: 0 0 10px;
-        }
+            .diller-membership-progress-bar-indicator {
+                background-color: var(--diller-membership_progress_bar-background-color);
+                justify-content: end;
+                align-items: center;
+                padding: 7px 10px;
+                display: flex;
+                height: 24px;
+                color: #000;
+                width: 0;
+                min-width: 17px;
+            }
+            .diller-membership-progress-bar-indicator:empty{
+                min-width: unset;
+                padding-left: 0;
+                padding-right: 0;
+            }
 
-        .diller-membership-progress-bar-indicator {
-            background-color: var(--diller-membership_progress_bar-background-color);
-            justify-content: end;
-            align-items: center;
-            padding: 7px 10px;
-            display: flex;
-            height: 24px;
-            color: #000;
-            width: 0;
-            min-width: 17px;
-        }
-        .diller-membership-progress-bar-indicator:empty{
-            min-width: unset;
-            padding-left: 0;
-            padding-right: 0;
-        }
+            .diller-box .diller-membership-progress-points, .diller-box .diller-membership-progress-labels {
+                position: relative;
+                height: 50px;
+            }
 
-        .diller-box .diller-membership-progress-points, .diller-box .diller-membership-progress-labels {
-            position: relative;
-            height: 50px;
-        }
+            .diller-heading__title {
+                margin: 0 0 30px 0;
+                font-size: 2.5rem;
+            }
 
-        .diller-heading__title {
-            margin: 0 0 30px 0;
-            font-size: 2.5rem;
-        }
+            .diller-heading__subtitle {
+                margin: 30px 0;
+                font-size: 1.5rem;
+            }
 
-        .diller-heading__subtitle {
-            margin: 30px 0;
-            font-size: 1.5rem;
-        }
-
-        .diller-invitation-list {
-            margin: 60px 0 30px 0;
-        }
-    </style>
+            .diller-invitation-list {
+                margin: 60px 0 30px 0;
+            }
+        </style>
+    <?php } ?>
 <?php } ?>

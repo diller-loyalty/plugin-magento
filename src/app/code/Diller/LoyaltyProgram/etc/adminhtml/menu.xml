@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Diller_LoyaltyProgram::loyaltyprogram" title="Loyalty" module="Diller_LoyaltyProgram" sortOrder="41" resource="Diller_LoyaltyProgram::loyaltyprogram" action="adminhtml/system_config/edit/section/dillerloyalty" />
+    </menu>
+</config>

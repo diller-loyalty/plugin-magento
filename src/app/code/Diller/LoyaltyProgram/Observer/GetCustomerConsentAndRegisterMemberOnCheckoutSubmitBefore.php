@@ -145,7 +145,6 @@
 
             if(empty($order_stamp_card_ids)) return true;
             foreach ($order_stamp_card_ids as $stamp_card) {
-                // TODO: validate quote id vs order id
                 $this->loyaltyHelper->reserveMemberStampCard($member->getId(), $stamp_card, $quote->getId());
             }
 

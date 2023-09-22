@@ -29,7 +29,10 @@ chmod 777 -R var/ pub/
 ```
 
 **// CLEAN CACHE**
-<br>bin/magento cache:clean && bin/magento cache:flush
+```
+bin/magento cache:clean
+bin/magento cache:flush
+```
 
 **// (IF YOU HAVE ISSUES WITH ELASTICSEARCH)**
 ```

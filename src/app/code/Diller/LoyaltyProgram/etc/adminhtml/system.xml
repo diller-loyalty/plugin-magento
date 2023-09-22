@@ -34,6 +34,11 @@
                     <label>API key</label>
                     <validate>required-entry</validate>
                 </field>
+                <field id="test_connection" translate="label" type="button" showInDefault="1" showInWebsite="0" showInStore="1">
+                    <label>Test connection</label>
+                    <frontend_model>Diller\LoyaltyProgram\Block\Adminhtml\TestConnectionButton</frontend_model>
+                </field>
+
                 <field id="loyalty_fields_mandatory" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="1">
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <label>Loyalty fields as mandatory?</label>

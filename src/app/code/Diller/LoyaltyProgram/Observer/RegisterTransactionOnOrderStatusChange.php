@@ -123,8 +123,7 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
                             }
                         }
                     }
-                    // TODO: fix product and variation being sent as different items
-                    if($product->getPrice() > 0){
+                    if($product->getPrice() > 0 && $product->getProductType() == 'configurable'){
                         $transaction_products[] = array(
                             "product" => array(
                                 "external_id" => $product->getProductId(),
@@ -145,7 +144,6 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
                 $transaction["stamp_card_ids"] = $transaction_stamp_card_ids;
 
                 try {
-                    // TODO: add "transaction_sent_to_diller" flag to order
                     $transaction = $this->loyaltyHelper->createTransaction($member->getId(), json_encode($transaction));
                 } catch (\DillerAPI\ApiException $e) {
                     $error_details = json_decode($e->getResponseBody())->detail;

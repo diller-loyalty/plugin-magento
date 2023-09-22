@@ -103,7 +103,6 @@ class Data extends AbstractHelper{
             }
         }
 
-        // TODO: add test credentials button and make sure the "loyalty_program_enabled" can only be set as enabled if the credentials are validated
         parent::__construct($context);
     }
 

@@ -166,8 +166,6 @@ class CouponStampCardManagement implements CouponStampCardManagementInterface {
         $price_rule_data["uses_per_customer"] = $coupon->getCanBeUsed();
         $price_rule_data["discount_amount"] = $coupon->getDiscountValue();
 
-        // TODO: implement product category ids
-
         // set discount type
         switch ($coupon->getDiscountType()){
             case "percentage":

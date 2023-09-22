@@ -76,6 +76,10 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
      * @throws LocalizedException
      */
     public function execute(Observer $observer) {
+        if(array_key_exists("dillerLoyalty_lastCustomerChange", $_SESSION)) {
+            if ((time() - $_SESSION["dillerLoyalty_lastCustomerChange"]) < 5) return true;
+        }
+
         $valid_phone_number = $phone_country_code = $phone_national_number = false;
         $event = $observer->getEvent();
 
@@ -162,9 +166,6 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                 "segments" => $member_segments
             );
 
-            $member_object["consent"]["receive_sms"] = key_exists('loyalty_consent_sms', $params);
-            $member_object["consent"]["receive_email"] = key_exists('loyalty_consent_email', $params);
-
             if(array_key_exists('birth_date', $params)) $member_object['birth_date'] = !empty($params['birth_date']) ? date('Y-m-d', strtotime($params['birth_date'])) : null;
             if(array_key_exists('gender', $params)) $member_object['gender'] = $params['gender'];
 
@@ -179,6 +180,9 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
             // update/delete member
             if($is_member){
                 try {
+                    $member_object["consent"]["receive_sms"] = key_exists('loyalty_consent_sms', $params);
+                    $member_object["consent"]["receive_email"] = key_exists('loyalty_consent_email', $params);
+
                     // Set the communications consents as true if member didn't had GDPR accepted before this
                     if(!$member->getConsent()->getGdprAccepted() && $member_object['consent']['gdpr_accepted']){
                         $member_object["consent"]["receive_sms"] = true;
@@ -197,10 +201,8 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                     return false;
                 }
             }else{
-                // register member in Diller
+                // register Diller member
                 try {
-                    $member_object["consent"]["receive_sms"] = true;
-                    $member_object["consent"]["receive_email"] = true;
                     $member = $this->loyaltyHelper->registerMember(json_encode($member_object));
                 }
                 catch (\DillerAPI\ApiException $e){
@@ -217,6 +219,9 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
             }
 
         }
+
+        // save timestamp to avoid looping this observer
+        $_SESSION["dillerLoyalty_lastCustomerChange"] = time();
 
         return true;
     }
