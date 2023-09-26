@@ -39,7 +39,7 @@ class DillerConsent implements LayoutProcessorInterface{
                 'customEntry' => null,
                 'template' => 'ui/form/components/button/simple',
                 'elementTmpl' => 'ui/form/element/checkbox',
-                'label' => sprintf($this->escaper->escapeHtml(__("I want to join %s's loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like.")), $loyaltyDetails['storeName']),
+                'label' => sprintf($this->escaper->escapeHtml(__("I want to join %s s loyalty program and receive benefits, offers and other marketing communications electronically, including email, SMS and the like.")), $loyaltyDetails['storeName']),
                 'id' => $attributeCode,
                 'value' => ($is_member && $member->getConsent()->getGdprAccepted()) ? true : ''
             ],

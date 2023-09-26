@@ -140,7 +140,7 @@ class CouponStampCardManagement implements CouponStampCardManagementInterface {
             'customer_group_ids' => array_keys($this->customerGroupCollection->toOptionArray()),
             'uses_per_coupon' => 10000,
             'coupon_type' => 2,
-            'discount_qty' => 1,
+            'discount_qty' => 1
         );
 
         if(!is_null($details->getExpireDate())){
@@ -178,7 +178,8 @@ class CouponStampCardManagement implements CouponStampCardManagementInterface {
                 }
                 break;
             default:
-            // free shipping
+                // free shipping
+                $price_rule_data['simple_free_shipping'] = 1;
         }
 
         return $price_rule_data;

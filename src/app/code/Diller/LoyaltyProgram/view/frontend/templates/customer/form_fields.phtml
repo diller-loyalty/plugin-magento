@@ -594,7 +594,7 @@
         function consentChange() {
             var gdprConsent = document.getElementById('loyalty_consent');
             if (gdprConsent.checked != true) {
-                let alertSelection = confirm("<?= $escaper->escapeHtml(__("Are you sure you want to leave our Loyalty Program? You'll lose access to unique discounts, advantages and your membership progress and points.")) ?>");
+                let alertSelection = confirm("<?= $escaper->escapeHtml(__("Are you sure you want to leave our Loyalty Program? You will lose access to unique discounts, advantages and your membership progress and points.")) ?>");
                 if (!alertSelection) {
                     gdprConsent.checked = true;
                 }

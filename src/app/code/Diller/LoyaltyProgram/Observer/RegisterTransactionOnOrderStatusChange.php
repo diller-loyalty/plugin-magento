@@ -50,9 +50,7 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
         $diller_order_history_consent = (boolean)($order->getData('diller_order_history_consent') ?? 0);
 
         // get member id from order object
-        if($member_id = $order->getData('diller_member_id')){
-            $is_member = ($member = $this->loyaltyHelper->getMemberById($member_id));
-        }
+        if($member_id = $order->getData('diller_member_id')) $is_member = ($member = $this->loyaltyHelper->getMemberById($member_id));
 
         if(!$is_member){
             // get customer from order
@@ -83,11 +81,14 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
 
             if ($diller_consent && $diller_order_history_consent) {
                 // send transaction to Diller when the order status matches the option chosen in the backoffice
-                if($order->getState() !== $this->loyaltyHelper->getSelectedOrderStatus()) return true;
+                if($order->getState() !== $this->loyaltyHelper->getSelectedOrderStatus()){
+
+                    return true;
+                }
 
                 $orderCreatedAt = $this->timezone->date(new \DateTime($order->getCreatedAt()));
                 $transaction = array(
-                    "external_id" => "mg_#" . $order->getId(),
+                    "external_id" => "MAGENTO_#" . $order->getId(),
                     "created_at" => $orderCreatedAt->format(DATE_ATOM),
                     "payment_details" => array(
                         array(

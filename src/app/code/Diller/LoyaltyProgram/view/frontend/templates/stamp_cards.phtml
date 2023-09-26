@@ -39,39 +39,45 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
 <?php if($loyaltyDetails) { ?>
     <?php if($is_member) { ?>
         <div class="diller-container stamp-cards">
-            <h3 class="page-title">
+            <h2 class="page-title">
                 <span id="diller-stamp-cards-container-title-cart" style="display:none" class="base" data-ui-id="page-title-wrapper"><b><?= $loyaltyDetails['storeName'] ?></b> <?= $escaper->escapeHtml(__('stamp cards')) ?></span>
                 <span id="diller-stamp-cards-container-title-loyalty-page" class="base" data-ui-id="page-title-wrapper" style="text-transform: capitalize"><?= $escaper->escapeHtml(__('stamp cards')) ?></span>
-            </h3>
+            </h2>
             <hr>
 
             <?php if(!empty($valid_stamp_cards)) { ?>
-                <?php foreach ($valid_stamp_cards as $stamp_card) { ?>
-                    <div class="stamp-card id_<?= $stamp_card->getId() ?>">
-                        <h3><?= $stamp_card->getTitle() ?></h3>
-                        <p><?= $stamp_card->getDescription() ?> (<?=$stamp_card->getStampsCollected() ?>/<?=$stamp_card->getRequiredStamps() ?>)</p>
-                        <div class="stamps">
-                            <?php for ($x = 1; $x <= $stamp_card->getRequiredStamps(); $x++) { ?>
-                                <div class="stamp <?= $stamp_card->getStampsCollected() >= $x ? 'collected' : '' ?>" <?= $x == $stamp_card->getRequiredStamps() ? 'title="'.$stamp_card->getLastStampText().'"' : '' ?>></div>
-                            <?php } ?>
-                        </div>
-                        <div class="products">
-                            <p>
-                                <?= $escaper->escapeHtml(__('To add a new stamp to this card')) ?>,
-                                <?= count($stamp_card['products']) > 1 ? $escaper->escapeHtml(__('you must buy one of following products')) : $escaper->escapeHtml(__('you must buy the following product')) ?>:</p>
-                            <ul>
-                                <?php foreach($stamp_card['products'] as $product){ ?>
-                                    <li><a href="<?= $product->getProductUrl() ?>" target="_blank"><?= $product->getName() ?></a></li>
+                <div class="stamp-cards-container">
+                    <?php foreach ($valid_stamp_cards as $stamp_card) { ?>
+                        <div class="stamp-card id_<?= $stamp_card->getId() ?>">
+                            <h3><?= $stamp_card->getTitle() ?></h3>
+                            <p><?= $stamp_card->getDescription() ?> (<?=$stamp_card->getStampsCollected() ?>/<?=$stamp_card->getRequiredStamps() ?>)</p>
+                            <div class="stamps">
+                                <?php for ($x = 1; $x <= $stamp_card->getRequiredStamps(); $x++) { ?>
+                                    <div class="stamp <?= $stamp_card->getStampsCollected() >= $x ? 'collected' : '' ?>" <?= $x == $stamp_card->getRequiredStamps() ? 'title="'.$stamp_card->getLastStampText().'"' : '' ?>></div>
                                 <?php } ?>
-                            </ul>
+                            </div>
+                            <div class="products">
+                                <?php if($stamp_card->getRequiredPoints() > 0){
+                                    echo "<p class='required_points'>" . sprintf($escaper->escapeHtml(__("%s points needed to add a stamp to this card")), $stamp_card->getRequiredPoints()) . "</p>";
+                                } ?>
+                                <p>
+                                    <?= $escaper->escapeHtml(__('To add a new stamp to this card')) ?>,
+                                    <?= count($stamp_card['products']) > 1 ? $escaper->escapeHtml(__('you must buy one of following products')) : $escaper->escapeHtml(__('you must buy the following product')) ?>:
+                                </p>
+                                <ul>
+                                    <?php foreach($stamp_card['products'] as $product){ ?>
+                                        <li><a href="<?= $product->getProductUrl() ?>" target="_blank"><?= $product->getName() ?></a></li>
+                                    <?php } ?>
+                                </ul>
+                            </div>
+                            <style>
+                                .stamp-cards .id_<?= $stamp_card->getId() ?> .stamp{
+                                    background-image: url("<?= $stamp_card->getImageUrl() ?>") !important;
+                                }
+                            </style>
                         </div>
-                    </div>
-                    <style>
-                        .stamp-cards .id_<?= $stamp_card->getId() ?> .stamp{
-                            background-image: url("<?= $stamp_card->getImageUrl() ?>") !important;
-                        }
-                    </style>
-                <?php } ?>
+                    <?php } ?>
+                </div>
             <?php } else { ?>
                 <p><?= $escaper->escapeHtml(__('No stamp cards found')) ?></p>
             <?php } ?>
@@ -87,6 +93,34 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
                 float:left;
                 width: 100%;
             }
+            p.required_points {
+                margin: 10px 0 !important;
+                font-size: 14px;
+                padding: 0 0 0 24px;
+            }
+            p.required_points:before {
+                background-image: url(https://magento.prerelease.dillerapp.com/static/version1695714213/frontend/Magento/luma/en_GB/Diller_LoyaltyProgram/img/info.svg);
+                background-position: center center;
+                background-repeat: no-repeat;
+                background-size: contain;
+                margin: 3px 0 0 -24px;
+                position: relative;
+                height: 16px;
+                content: "";
+                width: 16px;
+                float: left;
+            }
+            .stamp-cards-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 24px;
+            }
+            .stamp-cards-container > div {
+                flex: 0 calc(50% - 62px);
+                background-color: whitesmoke;
+                padding: 25px;
+                margin: 0;
+            }
 
             .stamp-card {
                 margin: 0 0 40px;
@@ -101,8 +135,9 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
                 margin: 0 0 15px;
             }
             .stamp-card .stamps {
+                flex-wrap: wrap;
                 display: flex;
-                gap: 10px;
+                gap: 19px;
             }
             .stamp-card .stamps .price{
                 justify-content: center;
@@ -139,6 +174,12 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
             }
             .stamp-card .products ul li{
                 margin: 0 0 5px;
+            }
+            .stamp-card .products ul li:last-child{
+                margin: 0;
+            }
+            body.checkout-cart-index span#diller-stamp-cards-container-title-cart {
+                font-size: 20px;
             }
         </style>
     <?php } ?>

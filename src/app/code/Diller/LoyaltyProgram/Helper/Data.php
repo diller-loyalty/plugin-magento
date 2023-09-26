@@ -345,9 +345,9 @@ class Data extends AbstractHelper{
                     return $result[0];
                 }
             }
+            if($customer->getCustomAttribute('diller_member_id') !== null) $this->addMemberIdToCustomer($id, null);
         }
 
-        if($customer->getCustomAttribute('diller_member_id') !== null) $this->addMemberIdToCustomer($id, null);
         return false;
     }
 
@@ -509,6 +509,7 @@ class Data extends AbstractHelper{
             try {
                 return $this->ruleRepository->getById($id);
             } catch (NoSuchEntityException|LocalizedException) {}
+            return false;
         }
 
         if(!empty($name)){

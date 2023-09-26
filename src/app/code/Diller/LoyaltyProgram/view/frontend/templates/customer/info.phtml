@@ -10,9 +10,7 @@
     $is_member = false;
     if($customer = $block->getCustomer()){
         $member = $loyaltyHelper->searchMemberByCustomerId($customer->getId());
-        if($member){
-            $is_member = $member->getConsent()->getGdprAccepted();
-        }
+        if($member) $is_member = $member->getConsent()->getGdprAccepted();
         if($is_member){
             $gender = $member->getGender();
             switch ($member->getGender()) {
