@@ -5,6 +5,7 @@
         <referenceContainer name="form.additional.info">
             <block class="Diller\LoyaltyProgram\Block\Frontend\Member"
                    name="form_additional_info_customer"
+                   cacheable="false"
                    template="Diller_LoyaltyProgram::customer/form_fields.phtml"
                    ifconfig="dillerloyalty/settings/loyalty_program_enabled"/>
         </referenceContainer>

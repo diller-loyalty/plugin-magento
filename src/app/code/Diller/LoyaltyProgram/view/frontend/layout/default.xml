@@ -5,6 +5,7 @@
             <block class="Diller\LoyaltyProgram\Block\Frontend\Member"
                    name="header_member_loyalty_points"
                    before="store_language"
+                   cacheable="false"
                    template="Diller_LoyaltyProgram::customer/header.phtml"
                    ifconfig="dillerloyalty/settings/loyalty_program_enabled"/>
         </referenceContainer>

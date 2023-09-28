@@ -4,6 +4,7 @@
         <referenceContainer name="form.additional.info">
             <block class="Magento\Framework\View\Element\Template"
                    name="form_additional_info_customer"
+                   cacheable="false"
                    template="Diller_LoyaltyProgram::customer/form_fields.phtml"
                    before="form_additional_info"
             />

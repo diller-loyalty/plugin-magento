@@ -290,6 +290,18 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
             body.checkout-cart-index span#diller-coupons-container-title-cart{
                 font-size: 20px;
             }
+
+            @media (max-width: 800px){
+                body.checkout-cart-index .diller-container.coupons{
+                    margin:15px 0;
+                }
+                body.checkout-cart-index .diller-container.coupons h2, body.checkout-cart-index .diller-container.coupons .diller-coupon-container {
+                    padding: 0 15px;
+                }
+                .diller-coupon-container .diller-coupon {
+                    flex: 0 0 calc(50% - 13px);
+                }
+            }
         </style>
     <?php } ?>
 <?php } ?>

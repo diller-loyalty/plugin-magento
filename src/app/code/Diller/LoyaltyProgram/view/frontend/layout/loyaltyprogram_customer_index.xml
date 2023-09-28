@@ -3,13 +3,13 @@
     <update handle="customer_account"/>
     <body>
         <referenceContainer name="content">
-            <block class="Diller\LoyaltyProgram\Block\Frontend\Member" name="info"
+            <block class="Diller\LoyaltyProgram\Block\Frontend\Member" name="info" cacheable="false"
                    template="Diller_LoyaltyProgram::customer/info.phtml"/>
-            <block class="Diller\LoyaltyProgram\Block\Frontend\Member" name="points"
+            <block class="Diller\LoyaltyProgram\Block\Frontend\Member" name="points" cacheable="false"
                    template="Diller_LoyaltyProgram::customer/points.phtml"/>
-            <block class="Diller\LoyaltyProgram\Block\Frontend\Member" name="coupons"
+            <block class="Diller\LoyaltyProgram\Block\Frontend\Member" name="coupons" cacheable="false"
                    template="Diller_LoyaltyProgram::coupons.phtml"/>
-            <block class="Diller\LoyaltyProgram\Block\Frontend\Member" name="stamp_cards"
+            <block class="Diller\LoyaltyProgram\Block\Frontend\Member" name="stamp_cards" cacheable="false"
                    template="Diller_LoyaltyProgram::stamp_cards.phtml"/>
         </referenceContainer>
     </body>
