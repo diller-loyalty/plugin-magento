@@ -309,12 +309,7 @@ class Data extends AbstractHelper{
     }
 
     public function createTransaction($member_id, $data){
-        try {
-            return $this->dillerAPI->Transactions->createTransaction($this->store_uid, $member_id, $data);
-        }
-        catch (ApiException){
-            return false;
-        }
+        return $this->dillerAPI->Transactions->createTransaction($this->store_uid, $member_id, $data);
     }
 
     // ----------------------------------------------------> Magento specific related methods
@@ -588,7 +583,7 @@ class Data extends AbstractHelper{
         if(empty($stamp_cards)) return $validated_stamp_cards;
 
         foreach ($stamp_cards as $stamp_card){
-            if($price_rule = $this->getPriceRule($stamp_card->getExternalID(), "Stamp Card - " . $stamp_card->getTitle())){
+            if($price_rule = $this->getPriceRule($stamp_card->getExternalID(), $stamp_card->getTitle())){
                 if($price_rule->getSimpleAction() !== 'loyalty_stamp_card') continue;
 
                 $price_rule_conditions = $price_rule->getActionCondition()->getConditions();

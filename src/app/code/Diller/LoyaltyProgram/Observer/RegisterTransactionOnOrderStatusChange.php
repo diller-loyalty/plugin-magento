@@ -11,6 +11,7 @@ use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 use Magento\Customer\Model\ResourceModel\CustomerFactory;
+use Psr\Log\LoggerInterface;
 
 class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
     protected RequestInterface $request;
@@ -20,8 +21,18 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
     protected CustomerRepositoryInterface $customerRepository;
     protected Data $loyaltyHelper;
     protected TimezoneInterface $timezone;
+    protected LoggerInterface $logger;
 
-    public function __construct(RequestInterface $request, Customer $customer, Registry $coreRegistry, CustomerFactory $customerFactory, CustomerRepositoryInterface $customerRepository, Data $loyaltyHelper, TimezoneInterface $timezone) {
+    public function __construct(
+        RequestInterface $request,
+        Customer $customer,
+        Registry $coreRegistry,
+        CustomerFactory $customerFactory,
+        CustomerRepositoryInterface $customerRepository,
+        Data $loyaltyHelper,
+        TimezoneInterface $timezone,
+        LoggerInterface $logger
+    ) {
         $this->request = $request;
         $this->customer = $customer;
         $this->_coreRegistry = $coreRegistry;
@@ -29,19 +40,21 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
         $this->customerRepository = $customerRepository;
         $this->loyaltyHelper = $loyaltyHelper;
         $this->timezone = $timezone;
+        $this->logger = $logger;
     }
 
     /**
      * Sent transaction to Diller if consent was given and if the order status matches the status chosen in the module backoffice.
      *
      * @param EventObserver $observer
-     * @return bool
+     * @return void
      */
-    public function execute(EventObserver $observer): bool{
+    public function execute(EventObserver $observer)
+    {
         $event = $observer->getEvent();
         $order = $event->getOrder();
 
-        if (!($order instanceof \Magento\Framework\Model\AbstractModel)) return true;
+        if (!($order instanceof \Magento\Framework\Model\AbstractModel)) return;
 
         $is_member = $valid_phone_number = false;
 
@@ -81,10 +94,7 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
 
             if ($diller_consent && $diller_order_history_consent) {
                 // send transaction to Diller when the order status matches the option chosen in the backoffice
-                if($order->getState() !== $this->loyaltyHelper->getSelectedOrderStatus()){
-
-                    return true;
-                }
+                if($order->getState() !== $this->loyaltyHelper->getSelectedOrderStatus()) return;
 
                 $orderCreatedAt = $this->timezone->date(new \DateTime($order->getCreatedAt()));
                 $transaction = array(
@@ -97,16 +107,16 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
                         )
                     ),
                     "send_email_receipt" => false,
-                    "origin" => array(
-                        "system_id" => "magento_" . $order->getStore()->getId(),
-                        "employee_id" => "",
-                        "department_id" => $this->loyaltyHelper->getSelectedDepartment(),
-                        "channel" => "OnlineStore"
-                    ),
                     "total" => $order->getGrandTotal(),
                     "total_tax" => $order->getTaxAmount(),
                     "total_discount" => $order->getDiscountAmount(),
                     "currency" => $order->getOrderCurrency()->getCode(),
+                    "origin" => array(
+                        "system_id" => "MAGENTO_#" . $order->getStore()->getId(),
+                        "employee_id" => "",
+                        "department_id" => $this->loyaltyHelper->getSelectedDepartment(),
+                        "channel" => "OnlineStore"
+                    ),
                     "department_id" => $this->loyaltyHelper->getSelectedDepartment()
                 );
 
@@ -124,7 +134,7 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
                             }
                         }
                     }
-                    if($product->getPrice() > 0 && $product->getProductType() == 'configurable'){
+                    if($product->getPrice() > 0){
                         $transaction_products[] = array(
                             "product" => array(
                                 "external_id" => $product->getProductId(),
@@ -145,13 +155,13 @@ class RegisterTransactionOnOrderStatusChange implements ObserverInterface{
                 $transaction["stamp_card_ids"] = $transaction_stamp_card_ids;
 
                 try {
-                    $transaction = $this->loyaltyHelper->createTransaction($member->getId(), json_encode($transaction));
+                    $this->loyaltyHelper->createTransaction($member->getId(), json_encode($transaction));
                 } catch (\DillerAPI\ApiException $e) {
-                    $error_details = json_decode($e->getResponseBody())->detail;
+                    $message = json_decode($e->getResponseBody())->detail;
+                    $this->logger->error('DILLER_LOYALTY -> ' . $message);
                 }
             }
         }
-
-        return true;
+        return;
     }
 }
