@@ -77,7 +77,7 @@ class CouponStampCardManagement implements CouponStampCardManagementInterface {
                 $this->response->setHttpResponseCode(200)->setBody(json_encode(["message" => "Price rule updated successfully!", "price_rule_id" => intval($result->getRuleId())]))->sendResponse();
                 exit();
             }
-        } catch (InputException|LocalizedException|NoSuchEntityException $e) {
+        } catch (Exception $e) {
             $response_code = $e->getMessage() === 'Coupon with the same code already exists.' ? 409 : 400;
             $this->response->setHttpResponseCode($response_code)->setBody(json_encode(["message" => $e->getMessage()]))->sendResponse();
             exit();
@@ -103,7 +103,7 @@ class CouponStampCardManagement implements CouponStampCardManagementInterface {
                 $this->response->setHttpResponseCode(200)->setBody(json_encode(["message" => "Price rule created successfully!", "price_rule_id" => intval($result->getRuleId())]))->sendResponse();
                 exit();
             }
-        } catch (InputException|LocalizedException|NoSuchEntityException $e) {
+        } catch (Exception $e) {
             $response_code = $e->getMessage() === 'Coupon with the same code already exists.' ? 409 : 400;
             $this->response->setHttpResponseCode($response_code)->setBody(json_encode(["message" => $e->getMessage()]))->sendResponse();
             exit();
@@ -123,7 +123,7 @@ class CouponStampCardManagement implements CouponStampCardManagementInterface {
             $this->response->setHttpResponseCode(202)->sendResponse();
             exit();
         }
-        catch (NoSuchEntityException|LocalizedException) {}
+        catch (Exception $e) {}
 
         $this->response->setHttpResponseCode(404)->setBody(json_encode(["message" => "Price rule not found!"]))->sendResponse();
     }
@@ -209,7 +209,7 @@ class CouponStampCardManagement implements CouponStampCardManagementInterface {
                     $product_skus[] = $product->getSku();
                 }
 
-            } catch (NoSuchEntityException) {}
+            } catch (NoSuchEntityException $e) {}
         }
         if(empty($price_rule_product_ids)){
             $this->response->addMessage("Price rule not created. We could not find any product with the given product ids", 400)->sendResponse();

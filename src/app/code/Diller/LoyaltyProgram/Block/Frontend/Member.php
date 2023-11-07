@@ -75,7 +75,7 @@ class Member extends Template {
     public function getCustomer(): ?CustomerInterface {
         try {
             return $this->currentCustomer->getCustomer();
-        } catch (NoSuchEntityException) {
+        } catch (NoSuchEntityException $e) {
             return null;
         }
     }

@@ -60,7 +60,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
         CustomerFactory             $customerFactory,
         CustomerRepositoryInterface $customerRepository,
         Data                        $loyaltyHelper,
-        ScopeConfigInterface        $scopeConfig,
+        ScopeConfigInterface        $scopeConfig
     ) {
         $this->request = $request;
         $this->customer = $customer;
@@ -122,7 +122,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                     }
                 }
             }
-            catch (\Exception $ex){}
+            catch (Exception $e){}
         }
 
         if($is_member || $valid_phone_number){
@@ -196,7 +196,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                     }
                     $member = $this->loyaltyHelper->updateMember($member->getId(), json_encode($member_object));
                 }
-                catch (\DillerAPI\ApiException $e){
+                catch (DillerAPI\ApiException $e){
                     // TODO: return error message
                     return false;
                 }
@@ -205,7 +205,7 @@ class SaveMemberOnCustomerChangeObserver implements ObserverInterface{
                 try {
                     $member = $this->loyaltyHelper->registerMember(json_encode($member_object));
                 }
-                catch (\DillerAPI\ApiException $e){
+                catch (DillerAPI\ApiException $e){
                     // TODO: return error message
                     return false;
                 }

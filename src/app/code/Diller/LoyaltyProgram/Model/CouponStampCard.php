@@ -7,7 +7,7 @@ class CouponStampCard implements CouponStampCardInterface{
     protected string $title;
     protected string $description;
     protected string $start_date;
-    protected string|null $expire_date;
+    protected string $expire_date;
     protected string $product_ids;
     protected string $product_categories;
     protected string $promo_code;
@@ -53,7 +53,7 @@ class CouponStampCard implements CouponStampCardInterface{
     /**
      * {@inheritDoc}
      */
-    public function getExpireDate(): string|null
+    public function getExpireDate(): string
     {
         return $this->expire_date;
     }

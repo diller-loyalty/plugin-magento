@@ -58,9 +58,9 @@ interface CouponStampCardInterface {
      * Gets the expiry date
      *
      * @api
-     * @return string|null
+     * @return string
      */
-    public function getExpireDate(): string|null;
+    public function getExpireDate(): string;
     /**
      * Sets the expiry date
      *

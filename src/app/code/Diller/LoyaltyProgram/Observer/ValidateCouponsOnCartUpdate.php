@@ -117,7 +117,7 @@ class ValidateCouponsOnCartUpdate implements ObserverInterface{
         return true;
     }
 
-    private function generateCouponCode(int $ruleId, string $stampCardName): bool|string{
+    private function generateCouponCode(int $ruleId, string $stampCardName) {
         try {
             $rule = $this->ruleRepository->getById($ruleId);
         } catch(LocalizedException $ex){
