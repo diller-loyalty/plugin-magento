@@ -1,0 +1,21 @@
+on: workflow_dispatch
+run-name: E2E Tests
+name: E2E Tests
+
+jobs:
+  e2e:
+    name: Magento ${{ matrix.swVersion }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mageversion: "latest"
+    steps:
+      - name: Clone Code
+        uses: actions/checkout@v4
+
+      - name: Magento 2 installation with DDEV
+        uses: julienloizelet/magento2-ddev-installation@v2.1.1
+        with:
+            magento_version: ${{matrix.mageversion}}

@@ -1,0 +1,15 @@
+version: '3.5'
+name: 'diller-loyalty--magento-plugin'
+services:
+  dockmage:
+    image: inluxc/${MAGE_VERSION}
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    volumes:
+      # Mount Module Code to Container
+      - ./src/app/code/Diller:/var/www/html/app/code/Diller
+      # Mount Magento Composer Credencials
+      - ./auth.json:/var/www/html/auth.json
+      # Mount Module Init Module Commands
+      - ./custom_module.sh:/var/www/boot_end.sh
