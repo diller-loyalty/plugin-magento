@@ -1,0 +1,45 @@
+{
+    "name": "diller-loyalty/magento-module",
+    "description": "Diller® is a loyalty platform that boosts customer retention. Marketing automation empowers you to easily set up personalized, revenue-boosting SMS and email campaigns that will keep your customers loyal.",
+    "homepage": "https://www.diller.io/",
+    "type": "magento2-module",
+    "license": [
+        "proprietary"
+    ],
+    "config": {
+        "sort-packages": true
+    },
+    "version": "0.1.2",
+    "require": {
+        "php": ">=7.4",
+        "diller-loyalty/php-sdk": "0.1.4",
+        "giggsey/libphonenumber-for-php": "^8.13.9"
+    }, 
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Diller\\LoyaltyProgram\\": ""
+        }
+    },
+    "extra": {
+        "label": {
+          "en-GB": "Diller® Loyalty Program",
+          "de-DE": "Diller® Treueprogramm",
+          "nn-NO": "Diller® Lojalitetsprogram"
+        },
+        "description": {
+          "en-GB": "Diller® is a loyalty platform that boosts customer retention. Marketing automation empowers you to easily set up personalized, revenue-boosting SMS and email campaigns that will keep your customers loyal.",
+          "de-DE": "Diller® ist eine Treueplattform, die die Kundenbindung steigert. Mit der Marketingautomatisierung können Sie ganz einfach personalisierte, umsatzsteigernde SMS- und E-Mail-Kampagnen einrichten, die Ihre Kunden binden.",
+          "nn-NO": "Diller® er en lojalitetsplattform som øker kundebevaring. Markedsføringsautomatisering gir deg mulighet til enkelt å sette opp personlig tilpassede, inntektsfremmende SMS- og e-postkampanjer som vil holde kundene dine lojale."
+        },
+        "manufacturerLink": {
+          "en-GB": "https://diller.io/",
+          "de-DE": "https://diller.io/",
+          "nn-NO": "https://diller.no/"
+        }
+      },    
+    "minimum-stability": "dev",
+    "prefer-stable": true    
+}

@@ -11,9 +11,3 @@ composer.lock
 
 # IDE specific
 /.idea/
-
-# Exclude greedy
-/src
-
-# Explicit inclusion
-!/src/app/code/Diller
