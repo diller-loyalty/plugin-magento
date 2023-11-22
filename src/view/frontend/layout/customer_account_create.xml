@@ -7,7 +7,7 @@
                    cacheable="false"
                    template="Diller_LoyaltyProgram::customer/form_fields.phtml"
                    before="form_additional_info"
-            />
+                   ifconfig="dillerloyalty/settings/loyalty_program_enabled" />
         </referenceContainer>
     </body>
 </page>
