@@ -8,8 +8,7 @@
                    cacheable="false"
                    template="Diller_LoyaltyProgram::coupons.phtml"
                    after="checkout.cart.methods.onepage.bottom"
-                   ifconfig="dillerloyalty/settings/loyalty_program_enabled"
-            />
+                   ifconfig="dillerloyalty/settings/loyalty_program_enabled" />
             <block class="Diller\LoyaltyProgram\Block\Frontend\Member"
                    name="loyalty_available_stamp_cards"
                    cacheable="false"
