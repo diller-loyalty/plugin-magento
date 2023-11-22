@@ -1,0 +1,101 @@
+<?php
+    /**
+     * @var \Diller\LoyaltyProgram\Block\Adminhtml\TestConnectionButton $block
+     */
+?>
+
+<?php echo $block->getButtonHtml() ?>
+<br><p class="test-result" style="opacity:0"></p>
+
+<script type="text/javascript">
+    require(['jquery'],function($) {
+        let connectionTested, hideMessageTimeoutHandler = false;
+        const programEnvironment = document.querySelector("#dillerloyalty_settings_test_environment");
+        const programStoreUID = document.querySelector("#dillerloyalty_settings_store_uid");
+        const programApiKey = document.querySelector("#dillerloyalty_settings_api_key");
+
+        testConnection();
+
+        document.querySelector("button#testConnectionBtn").addEventListener("click", function () {
+            testConnection();
+        })
+
+        document.querySelector("button#save").addEventListener("click", function (ev) {
+            testConnection();
+        })
+
+        programEnvironment.addEventListener("change", (event) => {
+            disableProgram();
+            showMessage("Test connection to validate configuration details");
+        });
+        programStoreUID.addEventListener("change", (event) => {
+            disableProgram();
+            showMessage("Test connection to validate configuration details");
+        });
+        programApiKey.addEventListener("change", (event) => {
+            disableProgram();
+            showMessage("Test connection to validate configuration details");
+        });
+
+        function testConnection() {
+            showMessage();
+
+            $.ajax({
+                url: '/loyaltyprogram/config/testconnection',
+                type: 'POST',
+                showLoader: true,
+                dataType: 'json',
+                data: {
+                    test_environment: programEnvironment.value,
+                    store_uid: programStoreUID.value,
+                    api_key: programApiKey.value
+                },
+                success: function (response) {
+                    if (!response.success) {
+                        showMessage("Connection not valid. Please verify the entered data", "error");
+                        disableProgram();
+                    } else {
+                        showMessage("Credentials validated successfully!", "success");
+                        enableProgram();
+                    }
+                }
+            });
+            connectionTested = true;
+        }
+
+        function showMessage(message = '', messageType = '') {
+            let messageElement = document.querySelector(".test-result");
+            messageElement.opacity = 0;
+            messageElement.value = '';
+            if (hideMessageTimeoutHandler) window.clearTimeout(hideMessageTimeoutHandler);
+
+            if (messageType.length > 0) {
+                messageElement.classList.add(messageType);
+            } else {
+                if (messageElement.classList.contains('error')) messageElement.classList.remove('error');
+                if (messageElement.classList.contains('success')) messageElement.classList.remove('success');
+            }
+
+            if (message.length > 0) {
+                messageElement.style.opacity = 1;
+                messageElement.innerHTML = message;
+                hideMessageTimeoutHandler = setTimeout(function () {
+                    messageElement.style.opacity = 0;
+                    if (messageType.length > 0) messageElement.classList.remove(messageType);
+                }, 10000);
+            }
+        }
+
+        function disableProgram() {
+            let enableSelection = document.querySelector("#dillerloyalty_settings_loyalty_program_enabled");
+            enableSelection.value = 0;
+            if (!enableSelection.classList.contains("disabled")) enableSelection.classList.add("disabled");
+        }
+
+        function enableProgram() {
+            let enableSelection = document.querySelector("#dillerloyalty_settings_loyalty_program_enabled");
+            enableSelection.value = 1;
+            if (enableSelection.classList.contains("disabled")) enableSelection.classList.remove("disabled");
+        }
+    });
+</script>
