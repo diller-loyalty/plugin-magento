@@ -1,0 +1,52 @@
+#menu-diller-loyaltyprogram-loyaltyprogram > a::before {
+    content: '' !important;
+    background-image: url(../images/diller.svg);
+    opacity: 0.5;
+    background-size: 60%;
+    background-position: center center;
+    background-repeat: no-repeat;
+    transition: 0.2s all ease;
+}
+
+#menu-diller-loyaltyprogram-loyaltyprogram > a:hover::before {
+    opacity: 1;
+    background-image: url(../images/diller_blue.svg);
+}
+
+.test-result {
+    transition: 0.2s all ease;
+    margin: 15px 0 10px;
+    display: flex;
+    align-items: center;
+}
+.test-result:before {
+    content: '\e61a';
+    font-size: 17px;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    font-family: 'Admin Icons';
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    speak: none;
+    margin: 0 7px 0 0;
+}
+
+.test-result.error{
+    color: #ce1717;
+}
+.test-result.error:before {
+    content: '\e632';
+}
+.test-result.success{
+    color: #236723;
+    font-weight: 600;
+}
+.test-result.success:before {
+    content: '\e618';
+}
+
+select#dillerloyalty_settings_loyalty_program_enabled.disabled {
+    pointer-events: none;
+    background: #cfcfcf;
+}
