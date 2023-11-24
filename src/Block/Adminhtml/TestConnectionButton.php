@@ -44,7 +44,7 @@ class TestConnectionButton extends Field {
         )->setData(
             [
                 'id' => 'testConnectionBtn',
-                'label' => __('Test')
+                'label' => __('Test Connection')
             ]
         );
         return $button->toHtml();
