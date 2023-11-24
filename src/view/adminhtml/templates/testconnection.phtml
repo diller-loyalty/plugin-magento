@@ -24,24 +24,25 @@
 
         programEnvironment.addEventListener("change", (event) => {
             disableProgram();
-            showMessage("Test connection to validate configuration details");
+            showMessage("<?php echo __('Test connection to validate configuration details')?>");
         });
         programStoreUID.addEventListener("change", (event) => {
             disableProgram();
-            showMessage("Test connection to validate configuration details");
+            showMessage("<?php echo __('Test connection to validate configuration details')?>");
         });
         programApiKey.addEventListener("change", (event) => {
             disableProgram();
-            showMessage("Test connection to validate configuration details");
+            showMessage("<?php echo __('Test connection to validate configuration details')?>");
         });
 
         function testConnection() {
-            if(programStoreUID.length < 12) {
-                showMessage("Invalid store UID");
+            showMessage();
+            if(programStoreUID.value.length < 12) {
+                showMessage("<?php echo __('Please enter a valid UID')?>");
                 return;
             }
-            if(programApiKey.length < 32) {
-                showMessage("Invalid API key");
+            if(programApiKey.value.length < 32) {
+                showMessage("<?php echo __('Please enter a valid API Key')?>");
                 return;
             }
 
@@ -57,10 +58,10 @@
                 },
                 success: function (response) {
                     if (!response.success) {
-                        showMessage("Connection not valid. Please verify the entered data", "error");
+                        showMessage("<?php echo __('Connection not valid. Please verify the entered data')?>", "error");
                         disableProgram();
                     } else {
-                        showMessage("Credentials validated successfully!", "success");
+                        showMessage("<?php echo __('Credentials validated successfully!')?><", "success");
                         enableProgram();
                     }
                 }
