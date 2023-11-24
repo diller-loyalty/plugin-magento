@@ -24,7 +24,7 @@
                 </field>
                 <field id="test_environment" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="1">
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <label>Test environment</label>
+                    <label> </label>
                 </field>
                 <field id="store_uid" translate="label comment" type="text" showInDefault="1" showInWebsite="0" showInStore="1" >
                     <label>Store UID</label>

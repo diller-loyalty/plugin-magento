@@ -14,8 +14,6 @@
         const programStoreUID = document.querySelector("#dillerloyalty_settings_store_uid");
         const programApiKey = document.querySelector("#dillerloyalty_settings_api_key");
 
-        testConnection();
-
         document.querySelector("button#testConnectionBtn").addEventListener("click", function () {
             testConnection();
         })
@@ -38,7 +36,14 @@
         });
 
         function testConnection() {
-            showMessage();
+            if(programStoreUID.length < 12) {
+                showMessage("Invalid store UID");
+                return;
+            }
+            if(programApiKey.length < 32) {
+                showMessage("Invalid API key");
+                return;
+            }
 
             $.ajax({
                 url: '/loyaltyprogram/config/testconnection',

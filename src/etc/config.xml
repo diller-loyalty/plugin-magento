@@ -3,10 +3,10 @@
     <default>
         <dillerloyalty>
             <settings>
-                <loyalty_program_enabled>No</loyalty_program_enabled>
-                <test_environment>No</test_environment>
-                <loyalty_fields_mandatory>Yes</loyalty_fields_mandatory>
-                <reserve_stamp_cards>No</reserve_stamp_cards>
+                <loyalty_program_enabled>0</loyalty_program_enabled>
+                <test_environment>0</test_environment>
+                <loyalty_fields_mandatory>1</loyalty_fields_mandatory>
+                <reserve_stamp_cards>0</reserve_stamp_cards>
             </settings>
         </dillerloyalty>
     </default>
