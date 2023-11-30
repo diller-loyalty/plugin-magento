@@ -12,9 +12,9 @@
     "version": "0.1.2",
     "require": {
         "php": ">=7.4",
-        "diller-loyalty/php-sdk": "0.1.4",
+        "diller-loyalty/php-sdk": "v0.1.12",
         "giggsey/libphonenumber-for-php": "^8.13.9"
-    }, 
+    },   
     "autoload": {
         "files": [
             "src/registration.php"

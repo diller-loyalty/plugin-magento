@@ -1,45 +1,91 @@
-## Magento 2 Module
+# Magento 2 Module
 
-To be able to test the module with the docker-compose attached, a docker volume must be created with magento files.
+## Description
 
-More details and instructions will be added soon
+** Feature list **
 
-Some helpful dev commands
+- Membership status (My Account Dashboard)
+- Coupons, stamps (My Account Dashboard)
+- Subscription form for joining the loyalty program
+- Multisite compatible
+- Multi-language support (NO, EN, and more to come)
+- GDPR compliance
 
-**// TO INSTALL MAGENTO**
+---
+
+##  HOW TO OBTAIN THE CREDENTIALS TO CONNECT MY STORE
+
+Get in contact with our awesome support and customer service team support@diller.no and they'll get you the store PIN code and API key to connect your store.
+ 
+---
+
+## Composer Installation
+
+** Install Diller into Magento 2.4.4 and above **
 ```
-bin/magento setup:install --base-url="http://magento.test/" --db-host="mysql" --db-name="magento" --db-user="diller" --db-password="diller123" --admin-firstname="Diller" --admin-lastname="Admin" --admin-email="tony@diller.no" --admin-user="diller" --admin-password="diller123" --use-rewrites="1" --backend-frontname="admin" --db-prefix=mage_
+composer require diller-loyalty/magento-module:dev-main
 ```
 
-**// CHECK MODULES STATUS**
+** Install Diller into Magento 2.4.3 **
 ```
-bin/magento module:status
-```
-
-**// TO ENABLE/DISABLE SPECIFIC MODULE(S)**
-```
-bin/magento module:enable/disable {Magento_Elasticsearch,Magento_Elasticsearch6,Magento_Elasticsearch7}
+composer require diller-loyalty/magento-module:2.4.3.x-dev
 ```
 
-**// AFTER CHANGING ANY MODULE STATUS**
+After adding Diller Module
 ```
+bin/magento module:enable Diller_LoyaltyProgram
+bin/magento setup:upgrade
+setup:di:compile
+```
+
+---
+
+## ZIP Installation
+Unzip the package into root, so it uncompresses the file to the following directory:
+```
+app/code/Diller/LoyaltyProgram
+```
+Run the following commands:
+```
+composer require diller-loyalty/php-sdk:v0.1.12
+composer require giggsey/libphonenumber-for-php
+bin/magento module:enable Diller_LoyaltyProgram
+bin/magento setup:upgrade
+setup:di:compile
+```
+
+---
+
+## Local Testing
+
+We use DockMage images to test our module.
+Fill the image and composer with the correct values depending with version as mencion above.
+
+docker-compose.yml
+```
+version: '3.5'
+name: 'magento-plugin'
+services:
+  magento2:
+    image: inluxc/dockmage:2.4.6
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    volumes:
+      # Mount Your Magento Composer Credentials
+      - ./auth.json:/var/www/html/auth.json
+      # Mount Module Init Module Commands
+      - ./custom_module.sh:/var/www/boot_end.sh
+```
+
+custom_module.sh
+```
+#!/bin/bash
+echo "Start Module Installation"
+composer require diller-loyalty/magento-module:dev-main
+bin/magento module:enable Diller_LoyaltyProgram
 bin/magento setup:upgrade
 bin/magento setup:di:compile
 chmod 777 -R var/ pub/
-```
-
-**// CLEAN CACHE**
-```
-bin/magento cache:clean
-bin/magento cache:flush
-```
-
-**// (IF YOU HAVE ISSUES WITH ELASTICSEARCH)**
-```
-composer config repositories.swissup composer https://docs.swissuplabs.com/packages/
-composer require swissup/module-search-mysql-legacy --prefer-source --ignore-platform-reqs
-bin/magento module:enable Swissup_SearchMysqlLegacy Swissup_Core
-bin/magento setup:upgrade
-bin/magento setup:di:compile
-bin/magento indexer:reindex catalogsearch_fulltext
+echo "Installation Complete"
 ```

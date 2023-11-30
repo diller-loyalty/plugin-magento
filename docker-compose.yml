@@ -1,0 +1,16 @@
+version: '3.5'
+name: 'magento-plugin'
+services:
+  magento2:
+    container_name: magento2
+    image: inluxc/dockmage:2.4.3
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    volumes:
+      # Mount Module Code to Container
+      - ./src:/var/www/html/app/code/Diller/LoyaltyProgram
+      # Mount Your Magento Composer Credentials
+      - ./auth.json:/var/www/html/auth.json
+      # Mount Module Init Module Commands
+      - ./custom_module.sh:/var/www/boot_end.sh
