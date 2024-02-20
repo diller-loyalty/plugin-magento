@@ -35,8 +35,13 @@ After adding Diller Module
 ```
 bin/magento module:enable Diller_LoyaltyProgram
 bin/magento setup:upgrade
-setup:di:compile
+bin/magento setup:di:compile
 ```
+In certain scenarios you may need to reset the cache folder permissions
+```
+sudo chmod 777 -R var/ pub/
+```
+
 
 ---
 

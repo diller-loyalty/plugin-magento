@@ -291,6 +291,17 @@ $loyaltyDetails = $loyaltyHelper->getLoyaltyDetails();
                 font-size: 20px;
             }
 
+            body.checkout-index-index .diller-container.coupons{
+                margin-bottom: 50px;
+                display:none;
+            }
+            body.checkout-index-index .diller-coupon-container .diller-coupon {
+                flex: 0 0 calc(20% - 20px);
+            }
+            body.checkout-index-index .page-main:has(.opc-progress-bar > li:last-child._active) .diller-container.coupons{
+                display: block;
+            }
+
             @media (max-width: 800px){
                 body.checkout-cart-index .diller-container.coupons{
                     margin:15px 0;
