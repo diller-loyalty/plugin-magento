@@ -7,7 +7,7 @@ class CouponStampCard implements CouponStampCardInterface{
     protected string $title;
     protected string $description;
     protected string $start_date;
-    protected string $expire_date;
+    protected string|null $expire_date;
     protected string $product_ids;
     protected string $product_categories;
     protected string $promo_code;
@@ -17,6 +17,7 @@ class CouponStampCard implements CouponStampCardInterface{
 
     public function __construct(){
         $this->promo_code = '';
+        $this->expire_date = null;
     }
 
     /**
@@ -53,18 +54,28 @@ class CouponStampCard implements CouponStampCardInterface{
     /**
      * {@inheritDoc}
      */
-    public function getExpireDate(): string
+    public function setExpireDate(string $expire_date = null): void
     {
-        return $this->expire_date;
+        if(!is_null($expire_date)){
+            $this->expire_date = $expire_date;
+        }
     }
+
     /**
      * {@inheritDoc}
      */
-    public function setExpireDate(string $expire_date = null): void
+    public function getExpireDate(): string|null
     {
-        $this->expire_date = $expire_date;
+        return $this->expire_date;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public function setStartDate(string $start_date): void
+    {
+        $this->start_date = $start_date;
+    }
 
     /**
      * {@inheritDoc}
@@ -72,13 +83,6 @@ class CouponStampCard implements CouponStampCardInterface{
     public function getStartDate(): string
     {
         return $this->start_date;
-    }
-    /**
-     * {@inheritDoc}
-     */
-    public function setStartDate(string $start_date): void
-    {
-        $this->start_date = $start_date;
     }
 
     /**
